@@ -2,15 +2,15 @@ import streamlit as st
 import pandas as pd
 import math
 
-# Configuración de página
+# Configuration
 st.set_page_config(
     page_title="Novelec - Calculadora Solar Aislada Interactiva",
     page_icon="☀️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed" # Collapsed by default for a clean mobile-first view
 )
 
-# Estilo corporativo personalizado (Identidad Novelec)
+# Estilo corporativo personalizado (Identidad Novelec) con mejoras para móvil (touch-friendly)
 st.markdown("""
 <style>
     .main {
@@ -22,10 +22,13 @@ st.markdown("""
     div.stButton > button:first-child {
         background-color: #002f54;
         color: white;
-        border-radius: 6px;
+        border-radius: 8px;
         border: none;
-        padding: 0.5rem 1rem;
+        padding: 0.6rem 1.2rem;
         font-weight: bold;
+        width: 100%; /* Botones grandes y fáciles de pulsar en móvil */
+        font-size: 1.1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     div.stButton > button:first-child:hover {
         background-color: #004b7c;
@@ -37,29 +40,43 @@ st.markdown("""
     }
     .metric-card {
         background-color: white;
-        padding: 1.5rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-        border-left: 5px solid #002f54;
-        margin-bottom: 1rem;
+        padding: 1.2rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+        border-left: 6px solid #002f54;
+        margin-bottom: 0.8rem;
     }
     .metric-value {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         font-weight: bold;
         color: #002f54;
         margin-top: 0.2rem;
     }
     .metric-title {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         color: #64748b;
         text-transform: uppercase;
         letter-spacing: 0.05em;
+    }
+    /* Estilos para que los inputs no queden pegados y sean touch-friendly */
+    .stNumberInput div[data-baseweb="input"] {
+        padding: 2px 0px;
+    }
+    /* Añadir un aviso visual de que la configuración está arriba en móvil */
+    .mobile-notice {
+        background-color: #e0f2fe;
+        color: #0369a1;
+        padding: 0.8rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        border-left: 4px solid #0284c7;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Encabezado principal de marca
-st.image("https://raw.githubusercontent.com/novelec/branding/main/logo.png", width=220) # Fallback elegante si no carga
+st.image("https://raw.githubusercontent.com/novelec/branding/main/logo.png", width=220)
 st.title("☀️ Calculadora Solar Aislada Inteligente")
 st.markdown("**Diseño y Sizing de Ingeniería Avanzada para Instalaciones Off-Grid - Novelec Servicios Técnicos**")
 st.markdown("---")
@@ -79,78 +96,203 @@ INVERTER_DB = {
     "PMP483150000": {"nombre": "Victron MultiPlus-II 48/15000/200-100", "pvp": 2585.0, "current": 500}
 }
 
-# Sidebar - Parámetros Geográficos y Técnicos
-st.sidebar.header("⚙️ Parámetros de Diseño")
+# Inicialización del Session State para electrodomésticos personalizados
+if "custom_appliances" not in st.session_state:
+    st.session_state.custom_appliances = []
 
-# 1. Cubierta
-roof_type = st.sidebar.selectbox(
-    "Tipo de Cubierta",
-    ["Inclinada Teja", "Inclinada Chapa (Sándwich)", "Plana"]
-)
+# MÓVIL-FIRST: Los parámetros de diseño ya no están escondidos en la barra lateral.
+# Ahora están en un Expander prominente en la página principal, eliminando la necesidad de la barra lateral.
+with st.expander("⚙️ CONFIGURACIÓN DEL TEJADO Y PARÁMETROS DE DISEÑO", expanded=True):
+    col_c1, col_c2, col_c3 = st.columns([1, 1, 1])
+    with col_c1:
+        roof_type = st.selectbox(
+            "Tipo de Cubierta",
+            ["Inclinada Teja", "Inclinada Chapa (Sándwich)", "Plana"],
+            key="config_roof_type"
+        )
+    with col_c2:
+        orientation = st.selectbox(
+            "Orientación",
+            ["Sur", "Este", "Oeste"],
+            key="config_orientation",
+            disabled=(roof_type == "Plana")
+        )
+    with col_c3:
+        tilt = st.selectbox(
+            "Inclinación",
+            ["5º", "7º", "10º", "15º", "30º", "45º"],
+            index=3,
+            key="config_tilt",
+            disabled=(roof_type == "Plana")
+        )
 
-# 2. Orientación e Inclinación (para HSP)
-orientation = st.sidebar.selectbox("Orientación", ["Sur", "Este", "Oeste"])
-tilt = st.sidebar.selectbox("Inclinación", ["5º", "7º", "10º", "15º", "30º", "45º"], index=3)
+    col_c4, col_c5, col_c6 = st.columns([1, 1, 1])
+    with col_c4:
+        system_efficiency = st.slider("Rendimiento del Sistema (%)", 70, 95, 85, key="config_losses") / 100.0
+    with col_c5:
+        autonomy_days = st.slider("Días de Autonomía", 1, 5, 2, key="config_autonomy")
+    with col_c6:
+        dod_max = st.slider("DoD Máxima Baterías (%)", 50, 100, 90, key="config_dod") / 100.0
 
-# Matriz HSP d'hivern (Catalunya)
-hsp_matrix = {
-    "5º": {"Sur": 2.0, "Este": 1.9, "Oeste": 1.9},
-    "7º": {"Sur": 2.0, "Este": 1.8, "Oeste": 1.8},
-    "10º": {"Sur": 2.0, "Este": 1.7, "Oeste": 1.7},
-    "15º": {"Sur": 2.0, "Este": 1.6, "Oeste": 1.6},
-    "30º": {"Sur": 2.5, "Este": 1.8, "Oeste": 1.8},
-    "45º": {"Sur": 3.0, "Este": 2.0, "Oeste": 2.0}
-}
-
-if roof_type != "Plana":
-    hsp = hsp_matrix[tilt][orientation]
-else:
-    hsp = 2.0 # En cubierta plana el HSP de invierno se fija a 2.0 según la calculadora excel
-
-st.sidebar.markdown(f"**HSP Invierno Calculada:** `{hsp} h` ❄️")
-
-# 3. Datos de Instalación
-st.sidebar.subheader("🔌 Configuración Eléctrica")
-system_efficiency = st.sidebar.slider("Rendimiento del Sistema (%)", 70, 95, 85) / 100.0
-autonomy_days = st.sidebar.slider("Días de Autonomía", 1, 5, 2)
-dod_max = st.sidebar.slider("DoD Máxima Baterías (%)", 50, 100, 90) / 100.0
-
-st.sidebar.subheader("📐 Disposición Estructural")
-num_rows = st.sidebar.number_input("Número de filas", min_value=1, max_value=10, value=3)
+    col_c7, col_c8 = st.columns([1, 2])
+    with col_c7:
+        num_rows = st.number_input("Número de filas de paneles", min_value=1, max_value=10, value=3, key="config_rows")
+    with col_c8:
+        st.markdown("<div style='padding-top:25px;'></div>", unsafe_allow_html=True)
+        # Matriz HSP d'hivern (Catalunya)
+        hsp_matrix = {
+            "5º": {"Sur": 2.0, "Este": 1.9, "Oeste": 1.9},
+            "7º": {"Sur": 2.0, "Este": 1.8, "Oeste": 1.8},
+            "10º": {"Sur": 2.0, "Este": 1.7, "Oeste": 1.7},
+            "15º": {"Sur": 2.0, "Este": 1.6, "Oeste": 1.6},
+            "30º": {"Sur": 2.5, "Este": 1.8, "Oeste": 1.8},
+            "45º": {"Sur": 3.0, "Este": 2.0, "Oeste": 2.0}
+        }
+        if roof_type != "Plana":
+            hsp = hsp_matrix[tilt][orientation]
+        else:
+            hsp = 2.0
+            
+        st.markdown(f"📊 **HSP Invierno Catalunya:** `{hsp} h` (Mes crítico de Diciembre)")
 
 # Pestañas principales
 tab1, tab2, tab3 = st.tabs(["📋 Consumos y Dimensionamiento", "🛠️ Resumen de Materiales (BOM)", "⚡ Manual de Instalación"])
 
 with tab1:
     st.subheader("💡 Estimación de Consumo Diario")
-    st.markdown("Introduce la potencia y horas de uso estimadas de los receptores activos en la vivienda:")
-    
-    # Creación de tabla de cargas
-    appliances_data = [
-        {"Electrodoméstico": "Nevera (Consumo medio integrado)", "Potencia (W)": 80, "Cant.": 1, "Horas": 8.75},
-        {"Electrodoméstico": "Bomba de agua de presión", "Potencia (W)": 500, "Cant.": 1, "Horas": 0.50},
-        {"Electrodoméstico": "Ventiladores de techo con luz", "Potencia (W)": 50, "Cant.": 2, "Horas": 6.00},
-        {"Electrodoméstico": "Iluminación LED general", "Potencia (W)": 10, "Cant.": 5, "Horas": 4.00},
-        {"Electrodoméstico": "Cafetera Nespresso", "Potencia (W)": 1450, "Cant.": 1, "Horas": 0.10},
-        {"Electrodoméstico": "Bomba de calor y aire (Inverter)", "Potencia (W)": 800, "Cant.": 1, "Horas": 4.00},
-        {"Electrodoméstico": "Lavadora (Prorrata diaria)", "Potencia (W)": 70, "Cant.": 1, "Horas": 0.07},
-        {"Electrodoméstico": "Televisor LED compacto", "Potencia (W)": 60, "Cant.": 1, "Horas": 4.00},
-        {"Electrodoméstico": "Ordenador portátil", "Potencia (W)": 65, "Cant.": 1, "Horas": 3.00},
-        {"Electrodoméstico": "Microondas", "Potencia (W)": 1200, "Cant.": 1, "Horas": 0.20},
-        {"Electrodoméstico": "Termo eléctrico (100l) — [1500W]", "Potencia (W)": 1500, "Cant.": 1, "Horas": 1.50}
-    ]
-    
-    edited_df = st.data_editor(
-        pd.DataFrame(appliances_data),
-        num_rows="dynamic",
-        use_container_width=True
-    )
-    
-    # Cálculos de Energía y Potencia Simultánea
-    edited_df["Consumo Diario (Wh/día)"] = edited_df["Potencia (W)"] * edited_df["Cant."] * edited_df["Horas"]
-    total_daily_energy = edited_df["Consumo Diario (Wh/día)"].sum()
-    total_simultaneous_power = (edited_df["Potencia (W)"] * edited_df["Cant."]).sum()
-    
+    st.markdown("Activa los receptores de la vivienda y configura su cantidad y uso con controles táctiles optimizados:")
+
+    # Base de datos de electrodomésticos agrupados por categorías para móvil
+    CATEGORIZED_DEFAULT_APPLIANCES = {
+        "❄️ Climatización y Refrigeración": [
+            {"name": "Nevera (Consumo medio integrado)", "w": 80, "qty": 1, "hours": 8.75},
+            {"name": "Bomba de calor y aire (Inverter)", "w": 800, "qty": 1, "hours": 4.00},
+            {"name": "Termo eléctrico (100l) — [1500W]", "w": 1500, "qty": 1, "hours": 1.50}
+        ],
+        "🍳 Cocina, Lavado y Agua": [
+            {"name": "Bomba de agua de presión", "w": 500, "qty": 1, "hours": 0.50},
+            {"name": "Cafetera Nespresso", "w": 1450, "qty": 1, "hours": 0.10},
+            {"name": "Microondas", "w": 1200, "qty": 1, "hours": 0.20},
+            {"name": "Lavadora (Prorrata diaria)", "w": 70, "qty": 1, "hours": 0.07}
+        ],
+        "🔌 Iluminación y Ocio": [
+            {"name": "Iluminación LED general", "w": 10, "qty": 5, "hours": 4.00},
+            {"name": "Ventiladores de techo con luz", "w": 50, "qty": 2, "hours": 6.00},
+            {"name": "Televisor LED compacto", "w": 60, "qty": 1, "hours": 4.00},
+            {"name": "Ordenador portátil", "w": 65, "qty": 1, "hours": 3.00}
+        ]
+    }
+
+    active_appliances = []
+
+    # Renderizado táctil amigable por grupos
+    for category, items in CATEGORIZED_DEFAULT_APPLIANCES.items():
+        with st.expander(category, expanded=True):
+            for item in items:
+                # Línea de cabecera con checkbox táctil grande
+                is_active = st.checkbox(
+                    f"**{item['name']}** ({item['w']} W)",
+                    value=True,
+                    key=f"check_{item['name']}"
+                )
+                if is_active:
+                    col_q, col_h = st.columns(2)
+                    with col_q:
+                        qty = st.number_input(
+                            "Cantidad",
+                            min_value=1,
+                            max_value=50,
+                            value=item["qty"],
+                            key=f"qty_{item['name']}"
+                        )
+                    with col_h:
+                        hours = st.number_input(
+                            "Horas/día",
+                            min_value=0.01,
+                            max_value=24.0,
+                            value=item["hours"],
+                            step=0.25,
+                            key=f"hours_{item['name']}"
+                        )
+                    active_appliances.append({
+                        "Electrodoméstico": item["name"],
+                        "Potencia (W)": item["w"],
+                        "Cant.": qty,
+                        "Horas": hours
+                    })
+                else:
+                    # Si no está activo se computa con 0 consumo
+                    pass
+                st.markdown("<hr style='margin: 0.5rem 0px; border-color:#e2e8f0;'/>", unsafe_allow_html=True)
+
+    # Bloque de Electrodomésticos Personalizados (Ideal para móvil)
+    with st.expander("➕ Electrodomésticos Personalizados", expanded=len(st.session_state.custom_appliances) > 0):
+        # Campos de entrada rápidos para añadir uno nuevo
+        col_new1, col_new2 = st.columns([2, 1])
+        with col_new1:
+            new_name = st.text_input("Nombre del aparato", placeholder="ej: Horno, Depuradora piscina", key="new_app_name")
+        with col_new2:
+            new_w = st.number_input("Potencia (W)", min_value=1, max_value=6000, value=100, key="new_app_w")
+            
+        if st.button("Añadir Receptáculo Personalizado"):
+            if new_name:
+                st.session_state.custom_appliances.append({
+                    "name": new_name,
+                    "w": new_w,
+                    "qty": 1,
+                    "hours": 1.00
+                })
+                st.rerun()
+
+        # Renderizar personalizados activos
+        for idx, item in enumerate(st.session_state.custom_appliances):
+            col_p_title, col_p_del = st.columns([3, 1])
+            with col_p_title:
+                st.markdown(f"**{item['name']}** ({item['w']} W)")
+            with col_p_del:
+                if st.button("Eliminar", key=f"del_custom_{idx}"):
+                    st.session_state.custom_appliances.pop(idx)
+                    st.rerun()
+            
+            col_p_q, col_p_h = st.columns(2)
+            with col_p_q:
+                custom_qty = st.number_input(
+                    "Cantidad",
+                    min_value=1,
+                    max_value=50,
+                    value=item["qty"],
+                    key=f"qty_custom_{idx}"
+                )
+                st.session_state.custom_appliances[idx]["qty"] = custom_qty
+            with col_p_h:
+                custom_hours = st.number_input(
+                    "Horas/día",
+                    min_value=0.01,
+                    max_value=24.0,
+                    value=item["hours"],
+                    step=0.25,
+                    key=f"hours_custom_{idx}"
+                )
+                st.session_state.custom_appliances[idx]["hours"] = custom_hours
+                
+            active_appliances.append({
+                "Electrodoméstico": item["name"],
+                "Potencia (W)": item["w"],
+                "Cant.": custom_qty,
+                "Horas": custom_hours
+            })
+            st.markdown("<hr style='margin: 0.5rem 0px; border-color:#e2e8f0;'/>", unsafe_allow_html=True)
+
+    # Conversión a DataFrame para los cálculos matemáticos internos
+    if len(active_appliances) > 0:
+        df_appliances = pd.DataFrame(active_appliances)
+        df_appliances["Consumo Diario (Wh/día)"] = df_appliances["Potencia (W)"] * df_appliances["Cant."] * df_appliances["Horas"]
+        total_daily_energy = df_appliances["Consumo Diario (Wh/día)"].sum()
+        total_simultaneous_power = (df_appliances["Potencia (W)"] * df_appliances["Cant."]).sum()
+    else:
+        total_daily_energy = 0
+        total_simultaneous_power = 0
+
     # Coeficiente de simultaneidad y VA
     sim_coeff = 0.70
     power_va = (total_simultaneous_power * sim_coeff) / 0.80
@@ -165,20 +307,26 @@ with tab1:
     
     # Cálculo real de paneles
     energy_adjusted = total_daily_energy / system_efficiency
-    min_pv_power = energy_adjusted / hsp
-    min_panels_theoretical = math.ceil(min_pv_power / panel_specs["p_pico"])
+    min_pv_power = energy_adjusted / hsp if hsp > 0 else 0
+    min_panels_theoretical = math.ceil(min_pv_power / panel_specs["p_pico"]) if panel_specs["p_pico"] > 0 else 0
     
     # Paneles reales configurados en estructura (Cálculo dinámico basado en consumo y simetría de filas)
-    total_panels_configured = math.ceil(min_panels_theoretical / num_rows) * num_rows
-    panels_per_row = total_panels_configured // num_rows
+    if num_rows > 0:
+        total_panels_configured = math.ceil(min_panels_theoretical / num_rows) * num_rows
+        panels_per_row = total_panels_configured // num_rows
+    else:
+        total_panels_configured = 0
+        panels_per_row = 0
+        
     total_pv_power_real = total_panels_configured * panel_specs["p_pico"]
     
     # Baterías Sizing
     useful_acc_required = total_daily_energy * autonomy_days / dod_max
     batteries_qty = math.ceil(useful_acc_required / 5040)  # Cada TBB ES100II tiene 5,04 kWh útiles nominales
     
-    # Renderizar tarjetas de métricas
-    col1, col2, col3, col4 = st.columns(4)
+    # Renderizar tarjetas de métricas optimizadas para pantalla móvil (apilables verticalmente)
+    st.markdown("""<div class="row">""", unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
     with col1:
         st.markdown(f"""
         <div class="metric-card">
@@ -210,7 +358,7 @@ with tab1:
 
 with tab2:
     st.subheader("📦 Resumen de Materiales y Presupuesto Inteligente (BOM)")
-    st.markdown("La calculadora selecciona dinámicamente las referencias y aplica un **43% de descuento profesional** sobre el material de Victron Energy:")
+    st.markdown("La calculadora selecciona dinámicamente las referencias de catálogo y calcula el presupuesto a PVP de tarifa oficial (sin descuentos aplicados):")
     
     # 1. Inverter Sizing & Manual Override
     auto_inverter_ref = "PMP482305010"
@@ -338,8 +486,8 @@ with tab2:
         desc_anclaje = "Salvatejas Regulable de Aluminio Sunfer S01 (Teja)" if roof_type == "Inclinada Teja" else "Soporte Chapa / Tornillo Doble Rosca S04-ZN (Metal)"
         pvp_anclaje = 5.53 if roof_type == "Inclinada Teja" else 3.80
         
-        perfiles_qty = math.ceil((2 * panels_per_row * 1.134) / 4.8) * num_rows
-        uniones_qty = max(0, (math.ceil((panels_per_row * 1.134) / 4.8) - 1) * 2 * num_rows)
+        perfiles_qty = math.ceil((2 * panels_per_row * 1.134) / 4.8) * num_rows if panels_per_row > 0 else 0
+        uniones_qty = max(0, (math.ceil((panels_per_row * 1.134) / 4.8) - 1) * 2 * num_rows) if panels_per_row > 0 else 0
         
         bom_items.append({
             "Categoría": "Estructura de Soporte",
@@ -386,7 +534,7 @@ with tab2:
             "Categoría": "Estructura de Soporte",
             "Referencia": "S11-C",
             "Descripción": "Presor / Grapa Central de Aluminio Sunfer (Omega)",
-            "Cantidad": 2 * (panels_per_row - 1) * num_rows,
+            "Cantidad": 2 * max(0, panels_per_row - 1) * num_rows,
             "Unidad": "uds",
             "PVP Tarifa (€)": 1.765,
             "Descuento": 0.0,
@@ -421,7 +569,7 @@ with tab2:
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": inverter_specs["pvp"],
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
     bom_items.append({
@@ -431,7 +579,7 @@ with tab2:
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": regulator_pvp,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
     
@@ -465,7 +613,7 @@ with tab2:
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 265.0,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
     bom_items.append({
@@ -475,7 +623,7 @@ with tab2:
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 235.0,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
     bom_items.append({
@@ -485,7 +633,7 @@ with tab2:
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 16.0,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
 
@@ -497,7 +645,7 @@ with tab2:
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 150.0,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
     bom_items.append({
@@ -514,10 +662,10 @@ with tab2:
         "Categoría": "Protección y Distribución",
         "Referencia": "VBS127010010",
         "Descripción": "Victron Interruptor/Desconectador de batería 275 A",
-        "Cantidad": 1,
+        "Cantidad": 1 if batteries_qty > 0 else 0,
         "Unidad": "uds",
         "PVP Tarifa (€)": 37.0,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
 
@@ -529,7 +677,7 @@ with tab2:
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 11.0,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
     
@@ -542,7 +690,7 @@ with tab2:
             "Cantidad": 1,
             "Unidad": "uds",
             "PVP Tarifa (€)": 15.0,
-            "Descuento": 0.43,
+            "Descuento": 0.0,
             "Is_Victron": True
         })
     else: # Si es MPPT RS se conecta por VE.Can, por tanto usa RJ45
@@ -553,7 +701,7 @@ with tab2:
             "Cantidad": 1,
             "Unidad": "uds",
             "PVP Tarifa (€)": 11.0,
-            "Descuento": 0.43,
+            "Descuento": 0.0,
             "Is_Victron": True
         })
         
@@ -561,20 +709,20 @@ with tab2:
         "Categoría": "Cable de Datos",
         "Referencia": "ASS030710118",
         "Descripción": "Cable BMS VE.Can a CAN-bus, Tipo A 1.8 m (TBB a Cerbo)",
-        "Cantidad": 1,
+        "Cantidad": 1 if batteries_qty > 0 else 0,
         "Unidad": "uds",
         "PVP Tarifa (€)": 15.0,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
     bom_items.append({
         "Categoría": "Cable de Datos",
         "Referencia": "ASS030700000",
         "Descripción": "Terminadores RJ45 VE.Can (Bolsa de 2 unidades)",
-        "Cantidad": 1,
+        "Cantidad": 1 if batteries_qty > 0 else 0,
         "Unidad": "uds",
         "PVP Tarifa (€)": 10.0,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
 
@@ -628,17 +776,17 @@ with tab2:
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 7.60,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
     bom_items.append({
         "Categoría": "Fusibles de Potencia",
         "Referencia": bat_fuse_ref,
         "Descripción": bat_fuse_name,
-        "Cantidad": 1,
+        "Cantidad": 1 if batteries_qty > 0 else 0,
         "Unidad": "uds",
         "PVP Tarifa (€)": 7.60,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
     bom_items.append({
@@ -648,7 +796,7 @@ with tab2:
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 7.60,
-        "Descuento": 0.43,
+        "Descuento": 0.0,
         "Is_Victron": True
     })
 
@@ -659,16 +807,24 @@ with tab2:
     
     # Visualizar presupuesto
     df_display = df_bom[["Categoría", "Referencia", "Descripción", "Cantidad", "Unidad", "PVP Tarifa (€)", "Descuento", "Precio Unit. Neto (€)", "Precio Total Neto (€)"]]
-    st.dataframe(df_display.style.format({
+    
+    # Filtro opcional por categorías en móvil
+    cat_filter = st.multiselect("Filtrar por Categoría (BOM)", list(df_display["Categoría"].unique()), default=None)
+    if cat_filter:
+        df_display_filtered = df_display[df_display["Categoría"].isin(cat_filter)]
+    else:
+        df_display_filtered = df_display
+
+    st.dataframe(df_display_filtered.style.format({
         "PVP Tarifa (€)": "{:,.2f} €",
         "Descuento": "{:.0%}",
         "Precio Unit. Neto (€)": "{:,.2f} €",
         "Precio Total Neto (€)": "{:,.2f} €"
-    }), use_container_width=True, height=600)
+    }), use_container_width=True, height=500)
     
     total_net = df_bom["Precio Total Neto (€)"].sum()
     
-    col_t1, col_t2 = st.columns(2)
+    col_t1, col_t2 = st.columns([2, 1])
     with col_t1:
         st.markdown(f"### 💰 Presupuesto Neto Total (Sin IVA): `{total_net:,.2f} €`")
     with col_t2:
@@ -686,7 +842,7 @@ with tab3:
     
     st.markdown("""
     ### 🔌 1. Esquema de Datos y Cableado de Comunicaciones
-    Es un error frecuente en obra tratar de conectar reguladores de alta tensión mediante cable VE.Direct. Sigue esta pauta obligatoria:
+    Es un error frecuente en obra conectar reguladores de alta tensión mediante cable VE.Direct. Sigue esta pauta obligatoria:
     *   **Inversor MultiPlus-II ➔ Cerbo GX:** Conectar usando cable RJ45 estándar (`ASS030064951`) al puerto **VE.Bus** del Cerbo GX.
     *   **Regulador MPPT (Si es MPPT RS):** Conectar mediante cable RJ45 estándar (`ASS030064951`) al puerto **VE.Can** del Cerbo GX. Colocar obligatoriamente los **terminadores azules** en los extremos libres.
     *   **Regulador MPPT (Si es 250/100):** Conectar mediante cable **VE.Direct** (`ASS030530218`) al puerto VE.Direct del Cerbo GX.
