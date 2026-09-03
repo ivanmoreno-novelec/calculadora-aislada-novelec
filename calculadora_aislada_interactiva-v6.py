@@ -126,12 +126,11 @@ with st.expander("⚙️ CONFIGURACIÓN DEL TEJADO Y PARÁMETROS DE DISEÑO", ex
             disabled=(roof_type == "Plana")
         )
 
-    col_c4, col_c5, col_c6 = st.columns([1, 1, 1])
+    system_efficiency = 0.85  # Rendimiento de sistema fijado al 85% para un dimensionamiento seguro
+    col_c4, col_c5 = st.columns([1, 1])
     with col_c4:
-        system_efficiency = st.slider("Rendimiento del Sistema (%)", 70, 95, 85, key="config_losses") / 100.0
-    with col_c5:
         autonomy_days = st.slider("Días de Autonomía", 1, 5, 2, key="config_autonomy")
-    with col_c6:
+    with col_c5:
         dod_max = st.slider("DoD Máxima Baterías (%)", 50, 100, 90, key="config_dod") / 100.0
 
     col_c7, col_c8 = st.columns([1, 2])
