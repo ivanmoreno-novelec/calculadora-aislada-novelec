@@ -75,8 +75,23 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Encabezado principal de marca
-st.image("https://raw.githubusercontent.com/novelec/branding/main/logo.png", width=220)
+# Encabezado principal de marca (Logotipo oficial de Novelec en formato vectorial SVG para funcionamiento 100% offline y pantallas HD)
+st.markdown("""
+<div style="text-align: left; margin-bottom: 1.5rem;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 110" width="320" style="max-width: 100%; height: auto;">
+  <!-- Icono corporativo oficial Novelec: Hoja/escudo azul con la 'n' en espacio negativo -->
+  <path d="M 15,15 H 70 A 25,25 0 0,1 95,40 V 70 A 25,25 0 0,1 70,95 H 40 A 25,25 0 0,1 15,70 Z" fill="#004b7c" />
+  <!-- La 'n' blanca interior perfectamente delineada y estilizada -->
+  <path d="M 38,72 V 48 A 12,12 0 0,1 62,48 V 72" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Texto de la marca: novelec en tipografía corporativa sans-serif moderna -->
+  <text x="115" y="62" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="50" fill="#002f54" letter-spacing="-1.5">novelec</text>
+  
+  <!-- Slogan oficial en catalán: El valor del servei -->
+  <text x="115" y="88" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="18" font-weight="500" fill="#64748b" letter-spacing="0.5">El valor del servei</text>
+</svg>
+</div>
+""", unsafe_allow_html=True)
 st.title("☀️ Calculadora Solar Aislada Inteligente")
 st.markdown("**Diseño y Sizing de Ingeniería Avanzada para Instalaciones Off-Grid - Novelec Servicios Técnicos**")
 st.markdown("---")
