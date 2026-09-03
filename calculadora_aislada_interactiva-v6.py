@@ -1,6 +1,13 @@
 import streamlit as st
 import pandas as pd
 import math
+import tempfile
+import os
+from fpdf import FPDF
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 # Configuration
 st.set_page_config(
@@ -111,6 +118,233 @@ INVERTER_DB = {
     "PMP483150000": {"nombre": "Victron MultiPlus-II 48/15000/200-100", "pvp": 2585.0, "current": 500}
 }
 
+# ────────────────────────────────────────────────────────────────────────
+# FUNCIONES AUXILIARES: GENERACIÓN DE CROQUIS Y PDF (NOVELEC STANDARD)
+# ────────────────────────────────────────────────────────────────────────
+
+def generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, filename):
+    fig, ax = plt.subplots(figsize=(10, 5), dpi=300)
+    ax.set_xlim(-0.5, 15.5)
+    ax.set_ylim(-0.5, 4)
+    ax.axis('off')
+    
+    def draw_block(x, y, w, h, title, subtitle, bg_color, text_color="white"):
+        p = patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.08", facecolor=bg_color, edgecolor="none")
+        ax.add_patch(p)
+        ax.text(x + w/2, y + h*0.6, title, fontsize=7.5, fontweight='bold', color=text_color, ha='center', va='center')
+        ax.text(x + w/2, y + h*0.25, subtitle, fontsize=6.5, color=text_color, ha='center', va='center')
+        
+    # 1. Panels Block
+    draw_block(0, 2.0, 2.2, 0.9, "GENERACION SOL", f"{total_panels_configured} Placas LONGi\n({total_pv_power_real/1000:.2f} kWp)", "#0284c7")
+    
+    # 2. Gave CC Box Block
+    draw_block(2.8, 2.0, 2.2, 0.9, "PROTECCIONES CC", "Caja Gave Solartec\n(Sobretensiones TII)", "#475569")
+    
+    # 3. MPPT Regulator Block
+    reg_name = "SmartSolar MPPT" if total_pv_power_real <= 5800 else "SmartSolar MPPT RS"
+    draw_block(5.6, 2.0, 2.2, 0.9, "REGULADOR MPPT", f"Victron {reg_name}\n(Carga Inteligente)", "#ea580c")
+    
+    # 4. Lynx Power In CC Busbar
+    draw_block(8.4, 1.0, 2.2, 0.9, "DISTRIBUCION CC", "Victron Lynx Power In\n(CC Centralizado)", "#334155")
+    
+    # 5. Batteries Block
+    draw_block(5.6, 0.0, 2.2, 0.9, "ACUMULACION", f"{batteries_qty} Baterias TBB\n({batteries_qty*5.04:.1f} kWh)", "#002f54")
+    
+    # 6. Inverter Block
+    inv_name = f"MultiPlus-II {power_va:.0f}VA"
+    draw_block(11.2, 1.0, 2.2, 0.9, "INVERSOR / CARG.", f"Victron {inv_name}\n(48V a 230V CA)", "#1e3a8a")
+    
+    # 7. AC Loads Block
+    draw_block(14.0, 1.0, 1.2, 0.9, "VIVIENDA", "Consumos\nCA 230V", "#16a34a")
+    
+    # 8. Generator Block (Optional)
+    if has_generator == "Sí":
+        draw_block(11.2, 2.8, 2.2, 0.7, "G. ELECTROGENO", "Grupo Auxiliar\n(Entrada AC-In)", "#dc2626")
+        
+    # Draw Arrows with custom markers
+    def draw_arrow(x1, y1, x2, y2, label=""):
+        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                    arrowprops=dict(arrowstyle="-|>", lw=1.2, color="#64748b", mutation_scale=10))
+        if label:
+            if x1 == 12.3: # Vertical arrow
+                ax.text(12.0, 2.35, "AC", fontsize=6, fontweight='bold', color="#475569", ha='right', va='center')
+            else:
+                ax.text((x1+x2)/2, (y1+y2)/2 + 0.15, label, fontsize=6, fontweight='bold', color="#475569", ha='center', va='center')
+            
+    # Connect Blocks
+    draw_arrow(2.2, 2.45, 2.8, 2.45, "CC") # Panels -> Gave
+    draw_arrow(5.0, 2.45, 5.6, 2.45, "CC") # Gave -> MPPT
+    draw_arrow(7.8, 2.45, 8.4, 1.7, "CC") # MPPT -> Lynx (angle)
+    draw_arrow(7.8, 0.45, 8.4, 1.2, "48V") # Batteries -> Lynx (angle)
+    draw_arrow(10.6, 1.45, 11.2, 1.45, "48V") # Lynx -> Inverter
+    draw_arrow(13.4, 1.45, 14.0, 1.45, "230V") # Inverter -> Loads
+    
+    if has_generator == "Sí":
+        draw_arrow(12.3, 2.8, 12.3, 1.9, "AC") # Generator -> Inverter
+        
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    plt.close()
+
+class NovelecPDF(FPDF):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.doc_title = "RESUMEN TÉCNICO Y PROPUESTA DE INSTALACIÓN"
+        self.doc_subtitle = "Novelec Servicios Técnicos"
+
+    def header(self):
+        if self.page_no() == 1:
+            self.set_fill_color(0, 47, 84) # Novelec Navy #002f54
+            self.rect(0, 0, 210, 32, "F")
+            self.set_text_color(255, 255, 255)
+            self.set_font("helvetica", "B", 18)
+            self.text(15, 14, "NOVELEC - SERVEIS TECNICS")
+            self.set_font("helvetica", "I", 8.5)
+            self.text(15, 20, "El valor del servei - Soluciones Fotovoltaicas Off-Grid")
+            self.set_fill_color(2, 132, 199) # Novelec light blue #0284c7
+            self.rect(170, 0, 40, 32, "F")
+            self.set_text_color(255, 255, 255)
+            self.set_font("helvetica", "B", 14)
+            self.text(178, 18, "SOLAR")
+            self.set_text_color(30, 41, 59) # Slate #1e293b
+            self.set_y(38)
+        else:
+            self.set_fill_color(0, 47, 84) # Novelec Navy
+            self.rect(0, 0, 210, 12, "F")
+            self.set_text_color(255, 255, 255)
+            self.set_font("helvetica", "B", 8)
+            self.text(15, 8, "NOVELEC  |  Dossier Tecnico de Instalacion Aislada")
+            self.set_text_color(30, 41, 59)
+            self.set_y(18)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("helvetica", "I", 8)
+        self.set_text_color(100, 116, 139)
+        self.cell(0, 10, f"Pagina {self.page_no()} | Propuesta Fotovoltaica Novelec", align="C")
+
+def generate_pdf_bytes(total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max):
+    pdf = NovelecPDF()
+    pdf.add_page()
+    
+    # Title
+    pdf.set_y(38)
+    pdf.set_font("helvetica", "B", 14)
+    pdf.set_text_color(0, 47, 84) # Novelec Navy
+    pdf.cell(0, 8, "DOSSIER TECNICO: PROYECTO SOL-AISLADA", ln=1)
+    pdf.set_font("helvetica", "I", 10)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(0, 6, "Ingenieria de Dimensionamiento Fotovoltaico y Presupuesto Tecnico", ln=1)
+    pdf.ln(4)
+    
+    # Project Info Shaded Panel (Fixed Overlap!)
+    box_y = pdf.get_y()
+    pdf.set_fill_color(248, 250, 252)
+    pdf.rect(10, box_y, 190, 22, "F") # Shaded background rectangle
+    
+    # Text inside the shaded panel
+    pdf.set_y(box_y + 3)
+    pdf.set_font("helvetica", "B", 9)
+    pdf.set_text_color(30, 41, 59)
+    
+    pdf.cell(95, 5, f"  Tipo de Cubierta:  {roof_type}")
+    pdf.cell(95, 5, f"  HSP Invierno (Girona):  {hsp:.1f} h")
+    pdf.ln(5)
+    pdf.cell(95, 5, f"  Orientacion:  {orientation}")
+    pdf.cell(95, 5, f"  Rendimiento del Sistema:  85% (Fijo)")
+    pdf.ln(5)
+    pdf.cell(95, 5, f"  Inclinacion:  {tilt}")
+    pdf.cell(95, 5, f"  Grupo Electrogeno Auxiliar:  {has_generator}")
+    
+    # Position cursor safely below the panel
+    pdf.set_y(box_y + 26)
+    
+    # 1. Estimacion de Consumo Diario
+    pdf.set_font("helvetica", "B", 11)
+    pdf.set_text_color(0, 47, 84)
+    pdf.cell(0, 8, "1. Estimacion de Consumo Diario", ln=1)
+    pdf.ln(2)
+    
+    # Table headers
+    pdf.set_fill_color(0, 47, 84) # Navy header
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("helvetica", "B", 9)
+    
+    pdf.cell(80, 8, "  Receptor / Electrodomestico", fill=True)
+    pdf.cell(25, 8, "Potencia (W)", fill=True, align="C")
+    pdf.cell(20, 8, "Cant.", fill=True, align="C")
+    pdf.cell(20, 8, "Horas/dia", fill=True, align="C")
+    pdf.cell(45, 8, "Consumo (Wh/dia)", fill=True, align="R")
+    pdf.ln(8)
+    
+    pdf.set_text_color(30, 41, 59)
+    pdf.set_font("helvetica", "", 9)
+    
+    alt = False
+    for app in active_appliances:
+        if alt:
+            pdf.set_fill_color(248, 250, 252)
+        else:
+            pdf.set_fill_color(255, 255, 255)
+        
+        # Strip or replace accented characters to be fully safe in Latin-1
+        clean_name = app['Electrodoméstico'].replace("ó", "o").replace("é", "e").replace("á", "a").replace("í", "i").replace("ú", "u").replace("—", "-")
+        pdf.cell(80, 6.5, f"  {clean_name}", fill=True)
+        pdf.cell(25, 6.5, f"{app['Potencia (W)']:.0f} W", fill=True, align="C")
+        pdf.cell(20, 6.5, f"{app['Cant.']:.0f}", fill=True, align="C")
+        pdf.cell(20, 6.5, f"{app['Horas']:.2f} h", fill=True, align="C")
+        pdf.cell(45, 6.5, f"{app['Potencia (W)']*app['Cant.']*app['Horas']:.2f} Wh ", fill=True, align="R")
+        pdf.ln(6.5)
+        alt = not alt
+        
+    pdf.set_fill_color(241, 245, 249)
+    pdf.set_font("helvetica", "B", 9)
+    pdf.cell(145, 7.5, "  ENERGIA TOTAL DIARIA REQUERIDA", fill=True)
+    pdf.cell(45, 7.5, f"{total_daily_energy/1000:.3f} kWh ", fill=True, align="R")
+    pdf.ln(7.5)
+    
+    pdf.cell(145, 7.5, "  POTENCIA SIMULTANEA DE INVERSION (Sim. Coeff = 0.7)", fill=True)
+    pdf.cell(45, 7.5, f"{power_va:.0f} VA ", fill=True, align="R")
+    pdf.ln(10)
+    
+    # Page 2
+    pdf.add_page()
+    
+    pdf.set_font("helvetica", "B", 11)
+    pdf.set_text_color(0, 47, 84)
+    pdf.cell(0, 8, "2. Resultados del Dimensionamiento de Ingenieria", ln=1)
+    pdf.ln(2)
+    
+    pdf.set_font("helvetica", "", 9)
+    pdf.set_text_color(30, 41, 59)
+    
+    pdf.set_fill_color(248, 250, 252)
+    pdf.cell(90, 11, f"  Generacion Solar: {total_panels_configured} Placas LONGi ({total_pv_power_real/1000:.2f} kWp)", fill=True)
+    pdf.cell(10, 11, "")
+    pdf.cell(90, 11, f"  Acumulacion Litio: {batteries_qty} Baterias TBB ({batteries_qty*5.04:.2f} kWh)", fill=True)
+    pdf.ln(14)
+    
+    pdf.cell(90, 11, f"  Inversor / Cargador: Victron MultiPlus-II {power_va:.0f} VA", fill=True)
+    pdf.cell(10, 11, "")
+    pdf.cell(90, 11, f"  Autonomia Garantizada: {autonomy_days} Dias (DoD: {dod_max*100:.0f}%)", fill=True)
+    pdf.ln(15)
+    
+    pdf.set_font("helvetica", "B", 11)
+    pdf.set_text_color(0, 47, 84)
+    pdf.cell(0, 8, "3. Esquema de Principio y Flujo de Energia (Croquis)", ln=1)
+    pdf.ln(2)
+    
+    temp_dir = tempfile.gettempdir()
+    croquis_path = os.path.join(temp_dir, "croquis_instalacion.png")
+    generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, croquis_path)
+    
+    pdf.image(croquis_path, x=10, y=pdf.get_y(), w=190, h=95)
+    pdf.ln(97)
+    
+
+    
+    return bytes(pdf.output())
+
+
 # Inicialización del Session State para electrodomésticos personalizados
 if "custom_appliances" not in st.session_state:
     st.session_state.custom_appliances = []
@@ -148,10 +382,12 @@ with st.expander("⚙️ CONFIGURACIÓN DEL TEJADO Y PARÁMETROS DE DISEÑO", ex
     with col_c5:
         dod_max = st.slider("DoD Máxima Baterías (%)", 50, 100, 90, key="config_dod") / 100.0
 
-    col_c7, col_c8 = st.columns([1, 2])
+    col_c7, col_c8, col_c9 = st.columns([1, 1, 1])
     with col_c7:
         num_rows = st.number_input("Número de filas de paneles", min_value=1, max_value=10, value=3, key="config_rows")
     with col_c8:
+        has_generator = st.selectbox("¿Existe Grupo Electrógeno?", ["No", "Sí"], key="config_generator")
+    with col_c9:
         st.markdown("<div style='padding-top:25px;'></div>", unsafe_allow_html=True)
         # Matriz HSP d'hivern (Catalunya)
         hsp_matrix = {
@@ -167,7 +403,7 @@ with st.expander("⚙️ CONFIGURACIÓN DEL TEJADO Y PARÁMETROS DE DISEÑO", ex
         else:
             hsp = 2.0
             
-        st.markdown(f"📊 **HSP Invierno Catalunya:** `{hsp} h` (Mes crítico de Diciembre)")
+        st.markdown(f"📊 **HSP Invierno:** `{hsp} h` (Diciembre)")
 
 # Pestañas principales
 tab1, tab2, tab3 = st.tabs(["📋 Consumos y Dimensionamiento", "🛠️ Resumen de Materiales (BOM)", "⚡ Manual de Instalación"])
@@ -193,7 +429,8 @@ with tab1:
             {"name": "Iluminación LED general", "w": 10, "qty": 5, "hours": 4.00},
             {"name": "Ventiladores de techo con luz", "w": 50, "qty": 2, "hours": 6.00},
             {"name": "Televisor LED compacto", "w": 60, "qty": 1, "hours": 4.00},
-            {"name": "Ordenador portátil", "w": 65, "qty": 1, "hours": 3.00}
+            {"name": "Ordenador portátil", "w": 65, "qty": 1, "hours": 3.00},
+            {"name": "Cargador de móvil/tablet", "w": 15, "qty": 2, "hours": 3.00}
         ]
     }
 
@@ -369,6 +606,38 @@ with tab1:
             <div class="metric-value">{batteries_qty} uds ({batteries_qty*5.04:.2f} kWh)</div>
         </div>
         """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.subheader("📄 Generar Resumen del Proyecto en PDF")
+    st.markdown("Genera un informe técnico corporativo en PDF (2 páginas) con los consumos, dimensionamiento, secuencia de arranque y un **croquis técnico del flujo de energía**.")
+    
+    # Generate PDF Bytes on demand
+    try:
+        pdf_bytes = generate_pdf_bytes(
+            total_daily_energy=total_daily_energy,
+            power_va=power_va,
+            total_panels_configured=total_panels_configured,
+            total_pv_power_real=total_pv_power_real,
+            batteries_qty=batteries_qty,
+            has_generator=has_generator,
+            selected_panel_name=selected_panel_name,
+            roof_type=roof_type,
+            orientation=orientation,
+            tilt=tilt,
+            hsp=hsp,
+            active_appliances=active_appliances,
+            autonomy_days=autonomy_days,
+            dod_max=dod_max
+        )
+        
+        st.download_button(
+            label="📥 Descargar Dossier Resumen (PDF)",
+            data=pdf_bytes,
+            file_name="resumen_instalacion_novelec.pdf",
+            mime="application/pdf"
+        )
+    except Exception as e:
+        st.error(f"Error al generar el PDF: {e}")
 
 with tab2:
     st.subheader("📦 Resumen de Materiales y Presupuesto Inteligente (BOM)")
