@@ -345,9 +345,11 @@ def generate_pdf_bytes(total_daily_energy, power_va, total_panels_configured, to
     return bytes(pdf.output())
 
 
-# Inicialización del Session State para electrodomésticos personalizados
+# Inicialización del Session State para electrodomésticos personalizados y configuración
 if "custom_appliances" not in st.session_state:
     st.session_state.custom_appliances = []
+if "manual_inverter" not in st.session_state:
+    st.session_state.manual_inverter = "Automático (Recomendado)"
 
 # MÓVIL-FIRST: Los parámetros de diseño ya no están escondidos en la barra lateral.
 # Ahora están en un Expander prominente en la página principal, eliminando la necesidad de la barra lateral.
@@ -666,44 +668,7 @@ with tab1:
             <div class="metric-value">{batteries_qty} uds ({batteries_qty*5.04:.2f} kWh)</div>
         </div>
         """, unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.subheader("📄 Generar Resumen del Proyecto en PDF")
-    st.markdown("Genera un informe técnico corporativo en PDF (2 páginas) con los consumos, dimensionamiento, secuencia de arranque y un **croquis técnico del flujo de energía**.")
-    
-    # Generate PDF Bytes on demand
-    try:
-        pdf_bytes = generate_pdf_bytes(
-            total_daily_energy=total_daily_energy,
-            power_va=power_va,
-            total_panels_configured=total_panels_configured,
-            total_pv_power_real=total_pv_power_real,
-            batteries_qty=batteries_qty,
-            has_generator=has_generator,
-            selected_panel_name=selected_panel_name,
-            roof_type=roof_type,
-            orientation=orientation,
-            tilt=tilt,
-            hsp=hsp,
-            active_appliances=active_appliances,
-            autonomy_days=autonomy_days,
-            dod_max=dod_max
-        )
-        
-        st.download_button(
-            label="📥 Descargar Dossier Resumen (PDF)",
-            data=pdf_bytes,
-            file_name="resumen_instalacion_novelec.pdf",
-            mime="application/pdf"
-        )
-    except Exception as e:
-        st.error(f"Error al generar el PDF: {e}")
-
-with tab2:
-    st.subheader("📦 Resumen de Materiales y Presupuesto Inteligente (BOM)")
-    st.markdown("La calculadora selecciona dinámicamente las referencias de catálogo y calcula el presupuesto a PVP de tarifa oficial (sin descuentos aplicados):")
-    
-    # 1. Inverter Sizing & Manual Override
+    # ── CÓMPUTO GLOBAL DEL LISTADO DE MATERIALES (BOM) ──
     auto_inverter_ref = "PMP482305010"
     if power_va < 3000:
         auto_inverter_ref = "PMP482305010"
@@ -716,10 +681,7 @@ with tab2:
     else:
         auto_inverter_ref = "PMP483150000"
         
-    manual_inverter_choice = st.selectbox(
-        "Forzar Inversor / Cargador (Opcional)",
-        ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in INVERTER_DB.items()]
-    )
+    manual_inverter_choice = st.session_state.get('manual_inverter', "Automático (Recomendado)")
     
     if manual_inverter_choice == "Automático (Recomendado)":
         final_inverter_ref = auto_inverter_ref
@@ -1150,6 +1112,65 @@ with tab2:
     
     # Visualizar presupuesto
     df_display = df_bom[["Categoría", "Referencia", "Descripción", "Cantidad", "Unidad", "PVP Tarifa (€)", "Descuento", "Precio Unit. Neto (€)", "Precio Total Neto (€)"]]
+    total_net = df_bom["Precio Total Neto (€)"].sum()
+
+
+    st.markdown("---")
+    st.subheader("📄 Generar Resumen del Proyecto en PDF")
+    st.markdown("Genera un informe técnico corporativo en PDF (2 páginas) con los consumos, dimensionamiento, secuencia de arranque y un **croquis técnico del flujo de energía**.")
+    
+    # Generate PDF Bytes on demand
+    try:
+        pdf_bytes = generate_pdf_bytes(
+            total_daily_energy=total_daily_energy,
+            power_va=power_va,
+            total_panels_configured=total_panels_configured,
+            total_pv_power_real=total_pv_power_real,
+            batteries_qty=batteries_qty,
+            has_generator=has_generator,
+            selected_panel_name=selected_panel_name,
+            roof_type=roof_type,
+            orientation=orientation,
+            tilt=tilt,
+            hsp=hsp,
+            active_appliances=active_appliances,
+            autonomy_days=autonomy_days,
+            dod_max=dod_max
+        )
+        
+        col_down1, col_down2 = st.columns(2)
+        with col_down1:
+            st.download_button(
+                label="📥 Descargar Dossier Resumen (PDF)",
+                data=pdf_bytes,
+                file_name="resumen_instalacion_novelec.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        with col_down2:
+            csv_data = df_display.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Descargar Presupuesto en CSV",
+                data=csv_data,
+                file_name="presupuesto_solar_novelec.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+    except Exception as e:
+        st.error(f"Error al generar la descarga: {e}")
+
+with tab2:
+    st.subheader("📦 Resumen de Materiales y Presupuesto Inteligente (BOM)")
+    st.markdown("La calculadora selecciona dinámicamente las referencias de catálogo y calcula el presupuesto a PVP de tarifa oficial (sin descuentos aplicados):")
+    
+    # 1. Inverter Sizing & Manual Override
+    manual_inverter_choice = st.selectbox(
+        "Forzar Inversor / Cargador (Opcional)",
+        ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in INVERTER_DB.items()],
+        key='manual_inverter'
+    )
+    
+    
     
     # Filtro opcional por categorías en móvil
     cat_filter = st.multiselect("Filtrar por Categoría (BOM)", list(df_display["Categoría"].unique()), default=None)
