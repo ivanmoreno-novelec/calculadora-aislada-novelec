@@ -412,23 +412,24 @@ with tab1:
     st.subheader("💡 Estimación de Consumo Diario")
     st.markdown("Activa los receptores de la vivienda y configura su cantidad y uso con controles táctiles optimizados:")
 
-    # Base de datos de electrodomésticos agrupados por categorías para móvil
+    # Base de datos de electrodomésticos agrupados por categorías para móvil (Con potencias actualizadas e interfaz touch-friendly)
     CATEGORIZED_DEFAULT_APPLIANCES = {
         "❄️ Climatización y Refrigeración": [
-            {"name": "Nevera (Consumo medio integrado)", "w": 80, "qty": 1, "hours": 8.75},
+            {"name": "Nevera (Consumo medio integrado)", "w": 200, "qty": 1, "hours": 3.50},
             {"name": "Bomba de calor y aire (Inverter)", "w": 800, "qty": 1, "hours": 4.00},
             {"name": "Termo eléctrico (100l) — [1500W]", "w": 1500, "qty": 1, "hours": 1.50}
         ],
         "🍳 Cocina, Lavado y Agua": [
-            {"name": "Bomba de agua de presión", "w": 500, "qty": 1, "hours": 0.50},
+            {"name": "Bomba de agua de presión", "w": 700, "qty": 1, "hours": 0.50},
             {"name": "Cafetera Nespresso", "w": 1450, "qty": 1, "hours": 0.10},
-            {"name": "Microondas", "w": 1200, "qty": 1, "hours": 0.20},
-            {"name": "Lavadora (Prorrata diaria)", "w": 70, "qty": 1, "hours": 0.07}
+            {"name": "Vitrocerámica", "w": 1500, "qty": 1, "hours": 0.50},
+            {"name": "Microondas", "w": 800, "qty": 1, "hours": 0.20},
+            {"name": "Lavadora (Prorrata diaria)", "w": 700, "qty": 1, "hours": 0.07}
         ],
         "🔌 Iluminación y Ocio": [
             {"name": "Iluminación LED general", "w": 10, "qty": 5, "hours": 4.00},
             {"name": "Ventiladores de techo con luz", "w": 50, "qty": 2, "hours": 6.00},
-            {"name": "Televisor LED compacto", "w": 60, "qty": 1, "hours": 4.00},
+            {"name": "Televisor LED compacto", "w": 250, "qty": 1, "hours": 4.00},
             {"name": "Ordenador portátil", "w": 65, "qty": 1, "hours": 3.00},
             {"name": "Cargador de móvil/tablet", "w": 15, "qty": 2, "hours": 3.00}
         ]
@@ -436,19 +437,27 @@ with tab1:
 
     active_appliances = []
 
-    # Renderizado táctil amigable por grupos
+    # Renderizado táctil amigable por grupos (Permitiendo ajustar la potencia directamente)
     for category, items in CATEGORIZED_DEFAULT_APPLIANCES.items():
         with st.expander(category, expanded=True):
             for item in items:
                 # Línea de cabecera con checkbox táctil grande
                 is_active = st.checkbox(
-                    f"**{item['name']}** ({item['w']} W)",
+                    f"**{item['name']}**",
                     value=True,
                     key=f"check_{item['name']}"
                 )
                 if is_active:
                     if item['name'] == "Termo eléctrico (100l) — [1500W]":
-                        col_q, col_u, col_t = st.columns([1, 1, 1.5])
+                        col_w, col_q, col_u, col_t = st.columns([1, 1, 1, 1.5])
+                        with col_w:
+                            w = st.number_input(
+                                "Potencia (W)",
+                                min_value=100,
+                                max_value=6000,
+                                value=item["w"],
+                                key=f"w_{item['name']}"
+                            )
                         with col_q:
                             qty = st.number_input(
                                 "Cantidad",
@@ -484,13 +493,21 @@ with tab1:
                         energy_heating_wh = thermo_users * 28.0 * delta_temp * 1.163
                         total_energy_with_losses_wh = energy_heating_wh + 1200.0
                         # Horas necesarias para cada termo
-                        hours_calculated = total_energy_with_losses_wh / item['w']
+                        hours_calculated = total_energy_with_losses_wh / w
                         hours = round(hours_calculated, 2)
                         
                         # Mostrar el resultado dinámico en un formato bonito
-                        st.info(f"🌡️ **Cálculo Termodinámico (CTE):** Para **{thermo_users} personas** a una ΔT de {delta_temp:.0f}ºC, la resistencia de {item['w']}W funcionará **{hours:.2f} horas/día** (Consumo: **{total_energy_with_losses_wh/1000:.2f} kWh/día** por termo).")
+                        st.info(f"🌡️ **Cálculo Termodinámico (CTE):** Para **{thermo_users} personas** a una ΔT de {delta_temp:.0f}ºC, la resistencia de {w}W funcionará **{hours:.2f} horas/día** (Consumo: **{total_energy_with_losses_wh/1000:.2f} kWh/día** por termo).")
                     else:
-                        col_q, col_h = st.columns(2)
+                        col_w, col_q, col_h = st.columns(3)
+                        with col_w:
+                            w = st.number_input(
+                                "Potencia (W)",
+                                min_value=1,
+                                max_value=6000,
+                                value=item["w"],
+                                key=f"w_{item['name']}"
+                            )
                         with col_q:
                             qty = st.number_input(
                                 "Cantidad",
@@ -510,7 +527,7 @@ with tab1:
                             )
                     active_appliances.append({
                         "Electrodoméstico": item["name"],
-                        "Potencia (W)": item["w"],
+                        "Potencia (W)": w,
                         "Cant.": qty,
                         "Horas": hours
                     })
