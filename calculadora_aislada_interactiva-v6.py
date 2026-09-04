@@ -447,24 +447,67 @@ with tab1:
                     key=f"check_{item['name']}"
                 )
                 if is_active:
-                    col_q, col_h = st.columns(2)
-                    with col_q:
-                        qty = st.number_input(
-                            "Cantidad",
-                            min_value=1,
-                            max_value=50,
-                            value=item["qty"],
-                            key=f"qty_{item['name']}"
-                        )
-                    with col_h:
-                        hours = st.number_input(
-                            "Horas/día",
-                            min_value=0.01,
-                            max_value=24.0,
-                            value=item["hours"],
-                            step=0.25,
-                            key=f"hours_{item['name']}"
-                        )
+                    if item['name'] == "Termo eléctrico (100l) — [1500W]":
+                        col_q, col_u, col_t = st.columns([1, 1, 1.5])
+                        with col_q:
+                            qty = st.number_input(
+                                "Cantidad",
+                                min_value=1,
+                                max_value=5,
+                                value=item["qty"],
+                                key=f"qty_{item['name']}"
+                            )
+                        with col_u:
+                            thermo_users = st.number_input(
+                                "Nº de Usuarios (Personas)",
+                                min_value=1,
+                                max_value=12,
+                                value=4,
+                                key="thermo_users"
+                            )
+                        with col_t:
+                            season = st.selectbox(
+                                "Temp. Entrada (Girona)",
+                                ["Épocas Templadas (Agua a 15ºC)", "Invierno / Fría (Agua a 10ºC)"],
+                                index=0,
+                                key="thermo_season"
+                            )
+                        
+                        # Cálculo Termodinámico Exacto de Horas de Funcionamiento
+                        # 28 litros/persona/día a 60ºC (Estándar CTE DB-HE-4)
+                        # Calor específico del agua = 1.163 Wh/litro·ºC
+                        # Pérdidas térmicas estáticas de mantenimiento (aislamiento) = 1200 Wh/día
+                        temp_in = 15.0 if "Templadas" in season else 10.0
+                        temp_out = 60.0
+                        delta_temp = temp_out - temp_in
+                        
+                        energy_heating_wh = thermo_users * 28.0 * delta_temp * 1.163
+                        total_energy_with_losses_wh = energy_heating_wh + 1200.0
+                        # Horas necesarias para cada termo
+                        hours_calculated = total_energy_with_losses_wh / item['w']
+                        hours = round(hours_calculated, 2)
+                        
+                        # Mostrar el resultado dinámico en un formato bonito
+                        st.info(f"🌡️ **Cálculo Termodinámico (CTE):** Para **{thermo_users} personas** a una ΔT de {delta_temp:.0f}ºC, la resistencia de {item['w']}W funcionará **{hours:.2f} horas/día** (Consumo: **{total_energy_with_losses_wh/1000:.2f} kWh/día** por termo).")
+                    else:
+                        col_q, col_h = st.columns(2)
+                        with col_q:
+                            qty = st.number_input(
+                                "Cantidad",
+                                min_value=1,
+                                max_value=50,
+                                value=item["qty"],
+                                key=f"qty_{item['name']}"
+                            )
+                        with col_h:
+                            hours = st.number_input(
+                                "Horas/día",
+                                min_value=0.01,
+                                max_value=24.0,
+                                value=item["hours"],
+                                step=0.25,
+                                key=f"hours_{item['name']}"
+                            )
                     active_appliances.append({
                         "Electrodoméstico": item["name"],
                         "Potencia (W)": item["w"],
