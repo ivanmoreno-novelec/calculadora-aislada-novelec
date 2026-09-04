@@ -105,14 +105,14 @@ st.markdown("---")
 
 # Inicialización de bases de datos
 PANELS_DB = {
-    "LONGi LR7-54HVB-495M (495Wp)": {"p_pico": 495, "voc": 39.5, "isc": 14.1, "desc": "HPBC 2.0 Full-Black"},
-    "LONGi LR7-60HVH-545M (545Wp)": {"p_pico": 545, "voc": 44.98, "isc": 15.35, "desc": "Alta eficiencia 24.8% BC"},
-    "LONGi LR7-60HVH-560M (560Wp)": {"p_pico": 560, "voc": 45.4, "isc": 15.6, "desc": "Alta eficiencia 24.8% BC"}
+    "LONGi LR7-54HVB-495M (495Wp)": {"p_pico": 495, "voc": 39.5, "isc": 14.1, "ref": "LR7-54HVB-495M", "desc": "Panel solar LONGi HPBC 2.0 Full-Black"},
+    "LONGi LR7-60HVH-545M (545Wp)": {"p_pico": 545, "voc": 44.98, "isc": 15.35, "ref": "LR7-60HVH-545M", "desc": "Panel solar LONGi alta eficiencia 24.8% BC"},
+    "LONGi LR7-60HVH-560M (560Wp)": {"p_pico": 560, "voc": 45.4, "isc": 15.6, "ref": "LR7-60HVH-560M", "desc": "Panel solar LONGi alta eficiencia 24.8% BC"}
 }
 
 INVERTER_DB = {
     "PMP482305010": {"nombre": "Victron MultiPlus-II 48/3000/35-32", "pvp": 624.0, "current": 100},
-    "PMP482505010": {"nombre": "Victron MultiPlus-II 48/5000/70-50", "pvp": 844.0, "current": 200},
+    "PMP482505012": {"nombre": "Victron MultiPlus-II 48/5000/70-50", "pvp": 844.0, "current": 200},
     "PMP482805000": {"nombre": "Victron MultiPlus-II 48/8000/110-100", "pvp": 1551.0, "current": 300},
     "PMP483105000": {"nombre": "Victron MultiPlus-II 48/10000/140-100", "pvp": 1853.0, "current": 400},
     "PMP483150000": {"nombre": "Victron MultiPlus-II 48/15000/200-100", "pvp": 2585.0, "current": 500}
@@ -708,7 +708,7 @@ with tab2:
     if power_va < 3000:
         auto_inverter_ref = "PMP482305010"
     elif power_va < 5000:
-        auto_inverter_ref = "PMP482505010"
+        auto_inverter_ref = "PMP482505012"
     elif power_va < 8000:
         auto_inverter_ref = "PMP482805000"
     elif power_va < 10000:
@@ -771,8 +771,8 @@ with tab2:
     # Módulos Solares
     bom_items.append({
         "Categoría": "Generación Solar",
-        "Referencia": panel_specs["desc"],
-        "Descripción": f"Panel solar {selected_panel_name}",
+        "Referencia": panel_specs["ref"],
+        "Descripción": f"Panel solar LONGi {panel_specs['desc']} ({panel_specs['p_pico']}Wp)",
         "Cantidad": total_panels_configured,
         "Unidad": "uds",
         "PVP Tarifa (€)": 95.0,
@@ -784,22 +784,22 @@ with tab2:
     if roof_type == "Plana":
         bom_items.append({
             "Categoría": "Estructura de Soporte",
-            "Referencia": "26H-A-15-C",
-            "Descripción": "Kit Inicial Sunfer 26H 15º Crudo (Doble Horizontal)",
+            "Referencia": "29.1H-A-15-C",
+            "Descripción": "Kit Inicial Sunfer 29.1H 15º Crudo (Simple Horizontal)",
             "Cantidad": num_rows,
             "Unidad": "uds",
-            "PVP Tarifa (€)": 204.90,
+            "PVP Tarifa (€)": 139.37,
             "Descuento": 0.0,
             "Is_Victron": False
         })
         if total_panels_configured > num_rows:
             bom_items.append({
                 "Categoría": "Estructura de Soporte",
-                "Referencia": "26H-B-15-C",
-                "Descripción": "Kit Ampliación Sunfer 26H 15º Crudo (Doble Horizontal)",
+                "Referencia": "29.1H-B-15-C",
+                "Descripción": "Kit Ampliación Sunfer 29.1H 15º Crudo (Simple Horizontal)",
                 "Cantidad": total_panels_configured - num_rows,
                 "Unidad": "uds",
-                "PVP Tarifa (€)": 112.20,
+                "PVP Tarifa (€)": 139.94,
                 "Descuento": 0.0,
                 "Is_Victron": False
             })
@@ -929,7 +929,7 @@ with tab2:
     # Baterías y brackets
     bom_items.append({
         "Categoría": "Acumulación (Batería)",
-        "Referencia": "TBB ES100II",
+        "Referencia": "ES100II",
         "Descripción": "Batería Litio TBB LiFePO4 ES100 II 48V 105Ah (5.04 kWh)",
         "Cantidad": batteries_qty,
         "Unidad": "uds",
@@ -939,7 +939,7 @@ with tab2:
     })
     bom_items.append({
         "Categoría": "Acumulación (Soporte)",
-        "Referencia": "Brackets ES100II",
+        "Referencia": "Brackets 3U",
         "Descripción": "Brackets ES100II 3U (contiene 2 unidades)",
         "Cantidad": batteries_qty,
         "Unidad": "uds",
