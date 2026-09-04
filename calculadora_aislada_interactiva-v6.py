@@ -857,7 +857,7 @@ with tab2:
             "Categoría": "Estructura de Soporte",
             "Referencia": ref_anclaje,
             "Descripción": desc_anclaje,
-            "Cantidad": 2 * panels_per_row * num_rows,
+            "Cantidad": 2 * (panels_per_row + 1) * num_rows,
             "Unidad": "uds",
             "PVP Tarifa (€)": pvp_anclaje,
             "Descuento": 0.0,
