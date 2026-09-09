@@ -118,11 +118,89 @@ INVERTER_DB = {
     "PMP483150000": {"nombre": "Victron MultiPlus-II 48/15000/200-100", "pvp": 2585.0, "current": 500}
 }
 
+REGULATOR_DB = {
+    "SCC125110412": {
+        "nombre": "Victron SmartSolar MPPT 250/100-Tr VE.Can",
+        "pvp": 654.00,
+        "max_power": 5800,
+        "max_voc": 250
+    },
+    "SCC145110512": {
+        "nombre": "Victron SmartSolar MPPT RS 450/100-MC4 (2 seguidores de alta tensión)",
+        "pvp": 1182.00,
+        "max_power": 11500,
+        "max_voc": 450
+    }
+}
+
+
+# ────────────────────────────────────────────────────────────────────────
+# VERIFICACIÓN DE SEGURIDAD ELÉCTRICA Y RIESGOS EN REGULADORES DE CARGA
+# ────────────────────────────────────────────────────────────────────────
+
+def check_regulator_safety(regulator_ref, total_pv_power_real, panels_per_row, panel_voc, num_rows, panel_isc):
+    dangers = []
+    warnings = []
+    
+    # Factor de corrección de tensión por bajas temperaturas en invierno Girona (-5 ºC) -> 1.12
+    temp_factor = 1.12
+    string_voc_temp = panels_per_row * panel_voc * temp_factor if panels_per_row > 0 else 0
+    
+    if regulator_ref == "SCC125110412":  # MPPT 250/100
+        # 1. Límite de tensión
+        if string_voc_temp > 250:
+            dangers.append(
+                f"💥 **Riesgo de Destrucción Irreversible:** La tensión Voc de string corregida por temperatura "
+                f"para el invierno de Girona (-5 ºC) es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **250 V** "
+                f"del MPPT 250/100. ¡Conectar {panels_per_row} paneles en serie destruirá el regulador y anulará la garantía!"
+            )
+        elif string_voc_temp > 220:
+            warnings.append(
+                f"⚠️ **Tensión de string elevada:** La tensión estimada a baja temperatura es de **{string_voc_temp:.1f} V**. "
+                f"Está extremadamente cerca del límite máximo de 250 V del equipo. Se recomienda no aumentar la cantidad en serie."
+            )
+            
+        # 2. Límite de potencia
+        if total_pv_power_real > 5800:
+            warnings.append(
+                f"📉 **Saturación de Carga (Clipping Severo):** La potencia total del campo solar (**{total_pv_power_real/1000:.2f} kWp**) "
+                f"supera el límite seguro de diseño de **5.800 W** para el MPPT 250/100 a 48V. El regulador limitará la inyección a 100A "
+                f"y desaprovechará la potencia excedente, además de incrementar la temperatura interna de la electrónica."
+            )
+            
+        # 3. Límite de corriente de cortocircuito (Isc)
+        total_isc = num_rows * panel_isc
+        if total_isc > 70:
+            dangers.append(
+                f"🔥 **Sobrecorriente CC Crítica:** La corriente total de cortocircuito de los {num_rows} strings en paralelo "
+                f"es de **{total_isc:.2f} A**, superando el límite máximo admitido de **70 A** del MPPT 250/100. Existe riesgo de arco eléctrico y fuego."
+            )
+            
+    elif regulator_ref == "SCC145110512":  # MPPT RS 450/100
+        # 1. Tensión de arranque mínima (120V)
+        string_voc_nominal = panels_per_row * panel_voc
+        if string_voc_nominal < 120 and total_pv_power_real > 0:
+            dangers.append(
+                f"🛑 **El Regulador NO Arrancará:** La tensión nominal solar (**{string_voc_nominal:.1f} V**) es inferior "
+                f"al umbral mínimo de arranque de **120 VCC** del regulador de alta tensión MPPT RS. "
+                f"Con cadenas de solo {panels_per_row} paneles en serie, el regulador jamás se activará y el sistema no funcionará."
+            )
+            
+        # 2. Límite de tensión absoluta (450V)
+        if string_voc_temp > 450:
+            dangers.append(
+                f"💥 **Riesgo de Destrucción Irreversible:** La tensión Voc corregida por temperatura (-5 ºC) "
+                f"es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **450 V** del MPPT RS. "
+                f"¡Conectar {panels_per_row} paneles en serie fundirá el regulador!"
+            )
+            
+    return dangers, warnings
+
 # ────────────────────────────────────────────────────────────────────────
 # FUNCIONES AUXILIARES: GENERACIÓN DE CROQUIS Y PDF (NOVELEC STANDARD)
 # ────────────────────────────────────────────────────────────────────────
 
-def generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, filename):
+def generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, filename):
     fig, ax = plt.subplots(figsize=(10, 5), dpi=300)
     ax.set_xlim(-0.5, 15.5)
     ax.set_ylim(-0.5, 4)
@@ -141,7 +219,7 @@ def generate_system_sketch(total_panels_configured, total_pv_power_real, batteri
     draw_block(2.8, 2.0, 2.2, 0.9, "PROTECCIONES CC", "Caja Gave Solartec\n(Sobretensiones TII)", "#475569")
     
     # 3. MPPT Regulator Block
-    reg_name = "SmartSolar MPPT" if total_pv_power_real <= 5800 else "SmartSolar MPPT RS"
+    reg_name = "SmartSolar MPPT" if regulator_ref == "SCC125110412" else "SmartSolar MPPT RS"
     draw_block(5.6, 2.0, 2.2, 0.9, "REGULADOR MPPT", f"Victron {reg_name}\n(Carga Inteligente)", "#ea580c")
     
     # 4. Lynx Power In CC Busbar
@@ -222,7 +300,7 @@ class NovelecPDF(FPDF):
         self.set_text_color(100, 116, 139)
         self.cell(0, 10, f"Pagina {self.page_no()} | Propuesta Fotovoltaica Novelec", align="C")
 
-def generate_pdf_bytes(total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max):
+def generate_pdf_bytes(total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max, regulator_ref, regulator_name):
     pdf = NovelecPDF()
     pdf.add_page()
     
@@ -325,7 +403,12 @@ def generate_pdf_bytes(total_daily_energy, power_va, total_panels_configured, to
     
     pdf.cell(90, 11, f"  Inversor / Cargador: Victron MultiPlus-II {power_va:.0f} VA", fill=True)
     pdf.cell(10, 11, "")
+    pdf.cell(90, 11, f"  Regulador Solar: {regulator_name.split(' (')[0]}", fill=True)
+    pdf.ln(14)
+    
     pdf.cell(90, 11, f"  Autonomia Garantizada: {autonomy_days} Dias (DoD: {dod_max*100:.0f}%)", fill=True)
+    pdf.cell(10, 11, "")
+    pdf.cell(90, 11, f"  Puesta a Tierra: Red Equipotencial CC", fill=True)
     pdf.ln(15)
     
     pdf.set_font("helvetica", "B", 11)
@@ -335,7 +418,7 @@ def generate_pdf_bytes(total_daily_energy, power_va, total_panels_configured, to
     
     temp_dir = tempfile.gettempdir()
     croquis_path = os.path.join(temp_dir, "croquis_instalacion.png")
-    generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, croquis_path)
+    generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, croquis_path)
     
     pdf.image(croquis_path, x=10, y=pdf.get_y(), w=190, h=95)
     pdf.ln(97)
@@ -350,6 +433,8 @@ if "custom_appliances" not in st.session_state:
     st.session_state.custom_appliances = []
 if "manual_inverter" not in st.session_state:
     st.session_state.manual_inverter = "Automático (Recomendado)"
+if "manual_regulator" not in st.session_state:
+    st.session_state.manual_regulator = "Automático (Recomendado)"
 
 # MÓVIL-FIRST: Los parámetros de diseño ya no están escondidos en la barra lateral.
 # Ahora están en un Expander prominente en la página principal, eliminando la necesidad de la barra lateral.
@@ -614,60 +699,119 @@ with tab1:
     st.markdown("---")
     st.subheader("📊 Resultados de Dimensionamiento")
     
-    # Selector de paneles
-    selected_panel_name = st.selectbox("Selecciona el Panel Solar LONGi", list(PANELS_DB.keys()), index=1)
-    panel_specs = PANELS_DB[selected_panel_name]
+    # Selector de paneles y modo de ajuste
+    col_p_sel, col_p_mode = st.columns([1.5, 1])
+    with col_p_sel:
+        selected_panel_name = st.selectbox("Selecciona el Panel Solar LONGi", list(PANELS_DB.keys()), index=1)
+        panel_specs = PANELS_DB[selected_panel_name]
+    with col_p_mode:
+        panel_mode = st.radio("Ajuste de Paneles", ["Automático (Por consumo)", "Manual (Personalizado)"], horizontal=True, key="panel_mode")
     
-    # Cálculo real de paneles
+    # Cálculo recomendado de paneles
     energy_adjusted = total_daily_energy / system_efficiency
     min_pv_power = energy_adjusted / hsp if hsp > 0 else 0
     min_panels_theoretical = math.ceil(min_pv_power / panel_specs["p_pico"]) if panel_specs["p_pico"] > 0 else 0
-    
-    # Paneles reales configurados en estructura (Cálculo dinámico basado en consumo y simetría de filas)
-    if num_rows > 0:
-        total_panels_configured = math.ceil(min_panels_theoretical / num_rows) * num_rows
-        panels_per_row = total_panels_configured // num_rows
+    auto_panels_configured = math.ceil(min_panels_theoretical / num_rows) * num_rows if num_rows > 0 else 0
+
+    if panel_mode == "Manual (Personalizado)":
+        col_m1, col_m2 = st.columns([1, 2])
+        with col_m1:
+            manual_panels_input = st.number_input(
+                "Nº Total de Paneles Solares",
+                min_value=1,
+                max_value=60,
+                value=auto_panels_configured if auto_panels_configured > 0 else 6,
+                step=1,
+                key="manual_panels_input"
+            )
+        if num_rows > 0:
+            panels_per_row = math.ceil(manual_panels_input / num_rows)
+            total_panels_configured = panels_per_row * num_rows
+        else:
+            total_panels_configured = manual_panels_input
+            panels_per_row = total_panels_configured
+            
+        with col_m2:
+            st.markdown("<div style='padding-top:25px;'></div>", unsafe_allow_html=True)
+            if total_panels_configured != manual_panels_input:
+                st.info(f"📐 **Ajuste de Simetría Estructural:** Para **{num_rows} filas** simétricas, se configuran **{total_panels_configured} paneles** ({panels_per_row} por fila).")
+            else:
+                st.caption(f"Distribuidos simétricamente en {num_rows} filas de {panels_per_row} paneles.")
     else:
-        total_panels_configured = 0
-        panels_per_row = 0
-        
+        total_panels_configured = auto_panels_configured
+        panels_per_row = total_panels_configured // num_rows if num_rows > 0 else 0
+
     total_pv_power_real = total_panels_configured * panel_specs["p_pico"]
     
-    # Baterías Sizing
+    # Generación Solar Producida (kWh/día) y Cobertura
+    daily_pv_generation_net_kwh = (total_pv_power_real * hsp * system_efficiency) / 1000
+    daily_pv_generation_gross_kwh = (total_pv_power_real * hsp) / 1000
+    daily_consumption_kwh = total_daily_energy / 1000
+    solar_coverage_pct = (daily_pv_generation_net_kwh / daily_consumption_kwh * 100) if daily_consumption_kwh > 0 else 100.0
+
+    # Baterías Sizing y Autonomía
     useful_acc_required = total_daily_energy * autonomy_days / dod_max
     batteries_qty = math.ceil(useful_acc_required / 5040)  # Cada TBB ES100II tiene 5,04 kWh útiles nominales
     
-    # Renderizar tarjetas de métricas optimizadas para pantalla móvil (apilables verticalmente)
+    total_battery_kwh = batteries_qty * 5.04
+    useful_battery_kwh = total_battery_kwh * dod_max
+    autonomy_days_calc = (useful_battery_kwh / daily_consumption_kwh) if daily_consumption_kwh > 0 else autonomy_days
+    
+    # Renderizar tarjetas de métricas optimizadas en 2 filas de 3 columnas
     st.markdown("""<div class="row">""", unsafe_allow_html=True)
-    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-title">Consumo Diario</div>
-            <div class="metric-value">{total_daily_energy/1000:.2f} kWh</div>
+            <div class="metric-value">{daily_consumption_kwh:.2f} kWh</div>
         </div>
         """, unsafe_allow_html=True)
     with col2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Generación Solar Est.</div>
+            <div class="metric-value">{daily_pv_generation_net_kwh:.2f} kWh/día</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-title">Potencia Requerida</div>
             <div class="metric-value">{power_va:.0f} VA</div>
         </div>
         """, unsafe_allow_html=True)
-    with col3:
+
+    col4, col5, col6 = st.columns(3)
+    with col4:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-title">Paneles Montados</div>
             <div class="metric-value">{total_panels_configured} uds ({total_pv_power_real/1000:.2f} kWp)</div>
         </div>
         """, unsafe_allow_html=True)
-    with col4:
+    with col5:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-title">Baterías TBB</div>
-            <div class="metric-value">{batteries_qty} uds ({batteries_qty*5.04:.2f} kWh)</div>
+            <div class="metric-value">{batteries_qty} uds ({total_battery_kwh:.2f} kWh)</div>
         </div>
         """, unsafe_allow_html=True)
+    with col6:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Autonomía Baterías</div>
+            <div class="metric-value">{autonomy_days_calc:.1f} días ({useful_battery_kwh:.1f} kWh útil)</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Balance Energético
+    if daily_consumption_kwh > 0:
+        if daily_pv_generation_net_kwh >= daily_consumption_kwh:
+            st.success(f"☀️ **Instalación Autosuficiente (Cobertura {solar_coverage_pct:.0f}%):** La generación solar estimada en invierno (**{daily_pv_generation_net_kwh:.2f} kWh/día**) cubre la demanda diaria (**{daily_consumption_kwh:.2f} kWh/día**). El banco de baterías aporta **{autonomy_days_calc:.1f} días** de reserva completa sin sol.")
+        else:
+            st.warning(f"⚠️ **Cobertura Solar Parcial ({solar_coverage_pct:.0f}%):** La generación solar estimada en invierno (**{daily_pv_generation_net_kwh:.2f} kWh/día**) es inferior a la demanda diaria (**{daily_consumption_kwh:.2f} kWh/día**). Déficit diario de **{daily_consumption_kwh - daily_pv_generation_net_kwh:.2f} kWh/día**.")
+
     # ── CÓMPUTO GLOBAL DEL LISTADO DE MATERIALES (BOM) ──
     auto_inverter_ref = "PMP482305010"
     if power_va < 3000:
@@ -690,15 +834,82 @@ with tab1:
         
     inverter_specs = INVERTER_DB[final_inverter_ref]
     
-    # 2. Regulator Sizing
-    if total_pv_power_real <= 5800:
-        regulator_ref = "SCC125110412"
-        regulator_name = "Victron SmartSolar MPPT 250/100-Tr VE.Can"
-        regulator_pvp = 654.00
+    # 2. Regulator Sizing & Manual Override
+    auto_regulator_ref = "SCC125110412" if total_pv_power_real <= 5800 else "SCC145110512"
+    manual_regulator_choice = st.session_state.get('manual_regulator', "Automático (Recomendado)")
+    
+    if manual_regulator_choice == "Automático (Recomendado)":
+        final_regulator_ref = auto_regulator_ref
     else:
-        regulator_ref = "SCC145110512"
-        regulator_name = "Victron SmartSolar MPPT RS 450/100-MC4 (2 seguidores de alta tensión)"
-        regulator_pvp = 1182.00
+        final_regulator_ref = manual_regulator_choice.split(" - ")[0]
+        
+    reg_specs = REGULATOR_DB[final_regulator_ref]
+    regulator_ref = final_regulator_ref
+    regulator_name = reg_specs["nombre"]
+    regulator_pvp = reg_specs["pvp"]
+    
+    # Verificación de Seguridad Eléctrica
+    dangers, warnings = check_regulator_safety(
+        regulator_ref=regulator_ref,
+        total_pv_power_real=total_pv_power_real,
+        panels_per_row=panels_per_row,
+        panel_voc=panel_specs["voc"],
+        num_rows=num_rows,
+        panel_isc=panel_specs["isc"]
+    )
+
+    if dangers or warnings:
+        st.markdown("<div style='padding-top:10px;'></div>", unsafe_allow_html=True)
+        st.markdown("### 🚨 VERIFICACIÓN DE SEGURIDAD ELÉCTRICA")
+        for danger in dangers:
+            st.error(danger)
+        for warning in warnings:
+            st.warning(warning)
+    # ── CÓMPUTO GLOBAL DEL LISTADO DE MATERIALES (BOM) ──
+    auto_inverter_ref = "PMP482305010"
+    if power_va < 3000:
+        auto_inverter_ref = "PMP482305010"
+    elif power_va < 5000:
+        auto_inverter_ref = "PMP482505012"
+    elif power_va < 8000:
+        auto_inverter_ref = "PMP482805000"
+    elif power_va < 10000:
+        auto_inverter_ref = "PMP483105000"
+    else:
+        auto_inverter_ref = "PMP483150000"
+        
+    manual_inverter_choice = st.session_state.get('manual_inverter', "Automático (Recomendado)")
+    
+    if manual_inverter_choice == "Automático (Recomendado)":
+        final_inverter_ref = auto_inverter_ref
+    else:
+        final_inverter_ref = manual_inverter_choice.split(" - ")[0]
+        
+    inverter_specs = INVERTER_DB[final_inverter_ref]
+    
+    # 2. Regulator Sizing & Manual Override
+    auto_regulator_ref = "SCC125110412" if total_pv_power_real <= 5800 else "SCC145110512"
+    manual_regulator_choice = st.session_state.get('manual_regulator', "Automático (Recomendado)")
+    
+    if manual_regulator_choice == "Automático (Recomendado)":
+        final_regulator_ref = auto_regulator_ref
+    else:
+        final_regulator_ref = manual_regulator_choice.split(" - ")[0]
+        
+    reg_specs = REGULATOR_DB[final_regulator_ref]
+    regulator_ref = final_regulator_ref
+    regulator_name = reg_specs["nombre"]
+    regulator_pvp = reg_specs["pvp"]
+    
+    # Verificación de Seguridad Eléctrica
+    dangers, warnings = check_regulator_safety(
+        regulator_ref=regulator_ref,
+        total_pv_power_real=total_pv_power_real,
+        panels_per_row=panels_per_row,
+        panel_voc=panel_specs["voc"],
+        num_rows=num_rows,
+        panel_isc=panel_specs["isc"]
+    )
         
     # 3. Gave Box selection
     if regulator_ref == "SCC125110412":
@@ -1134,8 +1345,10 @@ with tab1:
             tilt=tilt,
             hsp=hsp,
             active_appliances=active_appliances,
-            autonomy_days=autonomy_days,
-            dod_max=dod_max
+            autonomy_days=autonomy_days_calc,
+            dod_max=dod_max,
+            regulator_ref=regulator_ref,
+            regulator_name=regulator_name
         )
         
         col_down1, col_down2 = st.columns(2)
@@ -1169,6 +1382,21 @@ with tab2:
         ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in INVERTER_DB.items()],
         key='manual_inverter'
     )
+    
+    # 2. Regulator Sizing & Manual Override
+    manual_regulator_choice_val = st.selectbox(
+        "Forzar Regulador de Carga (Opcional)",
+        ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in REGULATOR_DB.items()],
+        key='manual_regulator'
+    )
+    
+    if dangers or warnings:
+        st.markdown("<div style='padding-top:10px;'></div>", unsafe_allow_html=True)
+        st.markdown("#### 🛡️ Alertas de Seguridad Eléctrica")
+        for danger in dangers:
+            st.error(danger)
+        for warning in warnings:
+            st.warning(warning)
     
     
     
