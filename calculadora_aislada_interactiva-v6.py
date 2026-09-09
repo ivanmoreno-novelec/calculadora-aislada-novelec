@@ -1105,6 +1105,21 @@ with tab1:
         with col_e4:
             st.metric(f"Corriente Isc Campo ({P_parallel}P)", f"{total_isc_ui:.2f} A", f"Imp Trabajo: {total_imp_ui:.2f} A")
 
+    # 4. Cálculo de Fusibles de Potencia CC (Novelec Standard)
+    mppt_charge_current = reg_specs["max_current"]
+    inverter_max_current = inverter_specs["current"]
+    inverter_charge_current = inverter_specs["charger_current"]
+    
+    mppt_fuse_spec = select_victron_fuse(mppt_charge_current, apply_safety_factor=True)
+    inverter_fuse_spec = select_victron_fuse(inverter_max_current, apply_safety_factor=False)
+    
+    total_combined_charge_current = mppt_charge_current + inverter_charge_current
+    max_battery_circuit_current = max(total_combined_charge_current, inverter_max_current)
+    bat_fuse_spec = select_victron_fuse(max_battery_circuit_current, apply_safety_factor=False)
+    
+    bat_fuse_ref = bat_fuse_spec["ref"]
+    bat_fuse_name = bat_fuse_spec["name"]
+
     with st.expander("🛡️ CÁLCULO Y PROTECCIÓN DE FUSIBLES CC (NOVELEC STANDARD)", expanded=True):
         col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
@@ -1143,20 +1158,7 @@ with tab1:
         gave_name = "Caja Solartec 2 strings 1000V (Protección sobretensiones Tipo II para MPPT RS)"
         gave_pvp = 288.21
 
-    # 4. Cálculo de Fusibles de Potencia CC (Novelec Standard)
-    mppt_charge_current = reg_specs["max_current"]
-    inverter_max_current = inverter_specs["current"]
-    inverter_charge_current = inverter_specs["charger_current"]
-    
-    mppt_fuse_spec = select_victron_fuse(mppt_charge_current, apply_safety_factor=True)
-    inverter_fuse_spec = select_victron_fuse(inverter_max_current, apply_safety_factor=False)
-    
-    total_combined_charge_current = mppt_charge_current + inverter_charge_current
-    max_battery_circuit_current = max(total_combined_charge_current, inverter_max_current)
-    bat_fuse_spec = select_victron_fuse(max_battery_circuit_current, apply_safety_factor=False)
-    
-    bat_fuse_ref = bat_fuse_spec["ref"]
-    bat_fuse_name = bat_fuse_spec["name"]
+
 
     # Contrucción del Presupuesto
     bom_items = []
