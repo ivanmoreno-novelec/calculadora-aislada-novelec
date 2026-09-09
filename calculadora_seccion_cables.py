@@ -138,7 +138,7 @@ class CablePDF(FPDF):
         self.set_text_color(100, 116, 139)
         self.cell(0, 10, f"Pagina {self.page_no()} | Memoria de Calculo Novelec", align="C")
 
-def generate_pdf_report(system_type, voltage, current, length, max_vdrop_pct, max_vdrop_v, 
+def generate_pdf_report(project_ref, system_type, voltage, current, length, max_vdrop_pct, max_vdrop_v, 
                         material, conductivity, s_calc, s_chosen, vdrop_real_v, 
                         vdrop_real_pct, power_loss_w, power_loss_pct, iz_max):
     pdf = CablePDF()
@@ -146,7 +146,7 @@ def generate_pdf_report(system_type, voltage, current, length, max_vdrop_pct, ma
     
     pdf.set_font("helvetica", "B", 14)
     pdf.set_text_color(0, 47, 84)
-    pdf.cell(0, 8, "CÁLCULO Y SELECCIÓN DE SECCIÓN DE CONDUCTOR", ln=1)
+    pdf.cell(0, 8, f"CÁLCULO Y SELECCIÓN DE SECCIÓN - {project_ref}", ln=1)
     pdf.set_font("helvetica", "I", 10)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(0, 6, "Verificacion por Caida de Tension y Capacidad Termica de Corriente", ln=1)
@@ -159,13 +159,15 @@ def generate_pdf_report(system_type, voltage, current, length, max_vdrop_pct, ma
     pdf.set_font("helvetica", "B", 9)
     pdf.set_text_color(30, 41, 59)
     
+    pdf.cell(95, 5, f"  Referencia Proyecto: {project_ref}")
     pdf.cell(95, 5, f"  Tipo de Sistema: {system_type}")
+    pdf.ln(5)
     pdf.cell(95, 5, f"  Tension Nominal: {voltage:.1f} V")
-    pdf.ln(5)
     pdf.cell(95, 5, f"  Corriente Nominal (I): {current:.2f} A")
-    pdf.cell(95, 5, f"  Longitud de Linea (L): {length:.1f} m")
     pdf.ln(5)
-    pdf.cell(95, 5, f"  Caida de Tension Max. Admisible: {max_vdrop_pct:.2f}% ({max_vdrop_v:.2f} V)")
+    pdf.cell(95, 5, f"  Longitud de Linea (L): {length:.1f} m")
+    pdf.cell(95, 5, f"  Caida Tension Max: {max_vdrop_pct:.2f}% ({max_vdrop_v:.2f} V)")
+    pdf.ln(5)
     pdf.cell(95, 5, f"  Material Conductor: {material} (g={conductivity:.0f})")
     pdf.ln(12)
     
@@ -207,6 +209,13 @@ def generate_pdf_report(system_type, voltage, current, length, max_vdrop_pct, ma
 # ────────────────────────────────────────────────────────────────────────
 
 st.subheader("⚙️ Parámetros Eléctricos de la Línea")
+
+col_ref1, col_ref2 = st.columns([2, 1])
+with col_ref1:
+    project_ref = st.text_input("Referencia del Proyecto / Cliente", value="CABLE-LINEA-01", key="project_ref")
+with col_ref2:
+    st.markdown("<div style='padding-top:25px;'></div>", unsafe_allow_html=True)
+    st.caption(f"📌 **Referencia:** `{project_ref}`")
 
 col_i1, col_i2, col_i3 = st.columns([1, 1, 1])
 
@@ -328,6 +337,7 @@ else:
 # Desglose en expansor
 with st.expander("📋 Desglose Técnico Completo y Descarga de Informe", expanded=True):
     df_res = pd.DataFrame([
+        {"Parámetro": "Referencia del Proyecto / Cliente", "Valor": project_ref},
         {"Parámetro": "Tipo de Sistema", "Valor": system_type},
         {"Parámetro": "Tensión Nominal", "Valor": f"{voltage:.1f} V"},
         {"Parámetro": "Corriente Nominal (I)", "Valor": f"{current:.2f} A"},
@@ -344,6 +354,7 @@ with st.expander("📋 Desglose Técnico Completo y Descarga de Informe", expand
     # Botones de Descarga de Ficha Técnica
     try:
         pdf_data = generate_pdf_report(
+            project_ref=project_ref,
             system_type=system_type,
             voltage=voltage,
             current=current,
@@ -366,7 +377,7 @@ with st.expander("📋 Desglose Técnico Completo y Descarga de Informe", expand
             st.download_button(
                 label="📥 Descargar Ficha Técnica en PDF",
                 data=pdf_data,
-                file_name="calculo_seccion_cable_novelec.pdf",
+                file_name=f"calculo_seccion_cable_{project_ref}.pdf",
                 mime="application/pdf",
                 use_container_width=True
             )
@@ -375,7 +386,7 @@ with st.expander("📋 Desglose Técnico Completo y Descarga de Informe", expand
             st.download_button(
                 label="📥 Descargar Resumen en CSV",
                 data=csv_data,
-                file_name="calculo_seccion_cable_novelec.csv",
+                file_name=f"calculo_seccion_cable_{project_ref}.csv",
                 mime="text/csv",
                 use_container_width=True
             )
