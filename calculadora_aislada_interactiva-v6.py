@@ -425,7 +425,7 @@ class NovelecPDF(FPDF):
         self.set_text_color(100, 116, 139)
         self.cell(0, 10, f"Pagina {self.page_no()} | Propuesta Fotovoltaica Novelec", align="C")
 
-def generate_pdf_bytes(total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max, regulator_ref, regulator_name):
+def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max, regulator_ref, regulator_name):
     pdf = NovelecPDF()
     pdf.add_page()
     
@@ -433,7 +433,7 @@ def generate_pdf_bytes(total_daily_energy, power_va, total_panels_configured, to
     pdf.set_y(38)
     pdf.set_font("helvetica", "B", 14)
     pdf.set_text_color(0, 47, 84) # Novelec Navy
-    pdf.cell(0, 8, "DOSSIER TECNICO: PROYECTO SOL-AISLADA", ln=1)
+    pdf.cell(0, 8, f"DOSSIER TECNICO: PROYECTO {project_ref}", ln=1)
     pdf.set_font("helvetica", "I", 10)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(0, 6, "Ingenieria de Dimensionamiento Fotovoltaico y Presupuesto Tecnico", ln=1)
@@ -449,13 +449,13 @@ def generate_pdf_bytes(total_daily_energy, power_va, total_panels_configured, to
     pdf.set_font("helvetica", "B", 9)
     pdf.set_text_color(30, 41, 59)
     
+    pdf.cell(95, 5, f"  Referencia Proyecto:  {project_ref}")
     pdf.cell(95, 5, f"  Tipo de Cubierta:  {roof_type}")
+    pdf.ln(5)
+    pdf.cell(95, 5, f"  Orientacion / Inclinacion:  {orientation} / {tilt}")
     pdf.cell(95, 5, f"  HSP Invierno (Girona):  {hsp:.1f} h")
     pdf.ln(5)
-    pdf.cell(95, 5, f"  Orientacion:  {orientation}")
     pdf.cell(95, 5, f"  Rendimiento del Sistema:  85% (Fijo)")
-    pdf.ln(5)
-    pdf.cell(95, 5, f"  Inclinacion:  {tilt}")
     pdf.cell(95, 5, f"  Grupo Electrogeno Auxiliar:  {has_generator}")
     
     # Position cursor safely below the panel
@@ -563,7 +563,14 @@ if "manual_regulator" not in st.session_state:
 
 # MÓVIL-FIRST: Los parámetros de diseño ya no están escondidos en la barra lateral.
 # Ahora están en un Expander prominente en la página principal, eliminando la necesidad de la barra lateral.
-with st.expander("⚙️ CONFIGURACIÓN DEL TEJADO Y PARÁMETROS DE DISEÑO", expanded=True):
+with st.expander("⚙️ CONFIGURACIÓN DEL PROYECTO, TEJADO Y PARÁMETROS DE DISEÑO", expanded=True):
+    col_ref1, col_ref2 = st.columns([2, 1])
+    with col_ref1:
+        project_ref = st.text_input("Referencia del Proyecto / Cliente", value="SOL-AISLADA-01", key="config_project_ref")
+    with col_ref2:
+        st.markdown("<div style='padding-top:25px;'></div>", unsafe_allow_html=True)
+        st.caption(f"📌 **Referencia:** `{project_ref}`")
+        
     col_c1, col_c2, col_c3 = st.columns([1, 1, 1])
     with col_c1:
         roof_type = st.selectbox(
@@ -1101,6 +1108,16 @@ with tab1:
 
     # Contrucción del Presupuesto
     bom_items = []
+    bom_items.append({
+        "Categoría": "Información General",
+        "Referencia": project_ref,
+        "Descripción": f"Proyecto / Cliente: {project_ref}",
+        "Cantidad": 1,
+        "Unidad": "stk",
+        "PVP Tarifa (€)": 0.0,
+        "Descuento": 0.0,
+        "Is_Victron": False
+    })
     
     # Módulos Solares
     bom_items.append({
@@ -1493,6 +1510,7 @@ with tab1:
     # Generate PDF Bytes on demand
     try:
         pdf_bytes = generate_pdf_bytes(
+            project_ref=project_ref,
             total_daily_energy=total_daily_energy,
             power_va=power_va,
             total_panels_configured=total_panels_configured,
@@ -1516,7 +1534,7 @@ with tab1:
             st.download_button(
                 label="📥 Descargar Dossier Resumen (PDF)",
                 data=pdf_bytes,
-                file_name="resumen_instalacion_novelec.pdf",
+                file_name=f"resumen_instalacion_{project_ref}.pdf",
                 mime="application/pdf",
                 use_container_width=True
             )
@@ -1525,7 +1543,7 @@ with tab1:
             st.download_button(
                 label="📥 Descargar Presupuesto en CSV",
                 data=csv_data,
-                file_name="presupuesto_solar_novelec.csv",
+                file_name=f"presupuesto_solar_{project_ref}.csv",
                 mime="text/csv",
                 use_container_width=True
             )
@@ -1561,7 +1579,7 @@ with tab2:
         st.download_button(
             label="📥 Descargar Presupuesto en CSV",
             data=csv_data,
-            file_name="presupuesto_solar_novelec.csv",
+            file_name=f"presupuesto_solar_{project_ref}.csv",
             mime="text/csv"
         )
 with tab3:
