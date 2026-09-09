@@ -325,7 +325,7 @@ def get_mppt_electrical_grouping(total_panels, panel_voc, panel_vmp, panel_isc, 
 # FUNCIONES AUXILIARES: GENERACIÓN DE CROQUIS Y PDF (NOVELEC STANDARD)
 # ────────────────────────────────────────────────────────────────────────
 
-def generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, filename):
+def generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, inverter_name, filename):
     fig, ax = plt.subplots(figsize=(10, 5), dpi=300)
     ax.set_xlim(-0.5, 15.5)
     ax.set_ylim(-0.5, 4)
@@ -354,8 +354,8 @@ def generate_system_sketch(total_panels_configured, total_pv_power_real, batteri
     draw_block(5.6, 0.0, 2.2, 0.9, "ACUMULACION", f"{batteries_qty} Baterias TBB\n({batteries_qty*5.04:.1f} kWh)", "#002f54")
     
     # 6. Inverter Block
-    inv_name = f"MultiPlus-II {power_va:.0f}VA"
-    draw_block(11.2, 1.0, 2.2, 0.9, "INVERSOR / CARG.", f"Victron {inv_name}\n(48V a 230V CA)", "#1e3a8a")
+    inv_label = inverter_name.replace("Victron ", "").split(" (")[0]
+    draw_block(11.2, 1.0, 2.2, 0.9, "INVERSOR / CARG.", f"{inv_label}\n(48V a 230V CA)", "#1e3a8a")
     
     # 7. AC Loads Block
     draw_block(14.0, 1.0, 1.2, 0.9, "VIVIENDA", "Consumos\nCA 230V", "#16a34a")
@@ -425,7 +425,7 @@ class NovelecPDF(FPDF):
         self.set_text_color(100, 116, 139)
         self.cell(0, 10, f"Pagina {self.page_no()} | Propuesta Fotovoltaica Novelec", align="C")
 
-def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max, regulator_ref, regulator_name):
+def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max, regulator_ref, regulator_name, inverter_ref, inverter_name):
     pdf = NovelecPDF()
     pdf.add_page()
     
@@ -526,7 +526,8 @@ def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_c
     pdf.cell(90, 11, f"  Acumulacion Litio: {batteries_qty} Baterias TBB ({batteries_qty*5.04:.2f} kWh)", fill=True)
     pdf.ln(14)
     
-    pdf.cell(90, 11, f"  Inversor / Cargador: Victron MultiPlus-II {power_va:.0f} VA", fill=True)
+    clean_inv_name = inverter_name.split(" (")[0]
+    pdf.cell(90, 11, f"  Inversor / Cargador: {clean_inv_name}", fill=True)
     pdf.cell(10, 11, "")
     pdf.cell(90, 11, f"  Regulador Solar: {regulator_name.split(' (')[0]}", fill=True)
     pdf.ln(14)
@@ -543,7 +544,7 @@ def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_c
     
     temp_dir = tempfile.gettempdir()
     croquis_path = os.path.join(temp_dir, "croquis_instalacion.png")
-    generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, croquis_path)
+    generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, inverter_name, croquis_path)
     
     pdf.image(croquis_path, x=10, y=pdf.get_y(), w=190, h=95)
     pdf.ln(97)
@@ -954,7 +955,7 @@ with tab1:
     col_inv, col_reg = st.columns(2)
     
     with col_inv:
-        st.markdown("#### ⚡ Inversor / Cargador Victron MultiPlus-II")
+        st.markdown("#### ⚡ Inversor / Cargador Victron Energy")
         auto_inverter_ref = "PMP482305010"
         if power_va < 3000:
             auto_inverter_ref = "PMP482305010"
@@ -1076,7 +1077,7 @@ with tab1:
             )
         with col_f2:
             st.metric(
-                "Fusible Inversor MultiPlus-II",
+                "Fusible Inversor / Cargador",
                 f"{inverter_fuse_spec['rating']} A",
                 f"I_max Descarga: {inverter_max_current} A ({inverter_fuse_spec['ref']})"
             )
@@ -1486,7 +1487,7 @@ with tab1:
     bom_items.append({
         "Categoría": "Fusibles de Potencia",
         "Referencia": inverter_fuse_spec["ref"],
-        "Descripción": f"Victron MEGA-fuse {inverter_fuse_spec['rating']}A/80V para Inversor MultiPlus-II ({inverter_max_current}A máx)",
+        "Descripción": f"Victron MEGA-fuse {inverter_fuse_spec['rating']}A/80V para Inversor ({inverter_max_current}A máx)",
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 7.60,
@@ -1526,7 +1527,9 @@ with tab1:
             autonomy_days=autonomy_days_calc,
             dod_max=dod_max,
             regulator_ref=regulator_ref,
-            regulator_name=regulator_name
+            regulator_name=regulator_name,
+            inverter_ref=final_inverter_ref,
+            inverter_name=inverter_specs["nombre"]
         )
         
         col_down1, col_down2 = st.columns(2)
