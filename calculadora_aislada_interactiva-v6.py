@@ -325,65 +325,101 @@ def get_mppt_electrical_grouping(total_panels, panel_voc, panel_vmp, panel_isc, 
 # FUNCIONES AUXILIARES: GENERACIÓN DE CROQUIS Y PDF (NOVELEC STANDARD)
 # ────────────────────────────────────────────────────────────────────────
 
-def generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, inverter_name, filename):
-    fig, ax = plt.subplots(figsize=(10, 5), dpi=300)
-    ax.set_xlim(-0.5, 15.5)
-    ax.set_ylim(-0.5, 4)
+def clean_inverter_label(name):
+    model = "Inversor"
+    if "MultiPlus-II" in name:
+        model = "MultiPlus-II"
+        if "GX" in name:
+            model += " GX"
+    elif "MultiPlus" in name:
+        model = "MultiPlus"
+    elif "Quattro-II" in name:
+        model = "Quattro-II"
+    elif "Quattro" in name:
+        model = "Quattro"
+    elif "Multi RS" in name:
+        model = "Multi RS"
+    elif "Inverter RS" in name:
+        model = "Inverter RS"
+    elif "Phoenix" in name:
+        model = "Phoenix"
+    
+    m = re.search(r'(\d+\/[0-9kK]+)', name)
+    if m:
+        return f"{model} {m.group(1)}"
+    return model
+
+def clean_mppt_label(reg_input):
+    if reg_input in REGULATOR_DB:
+        s = REGULATOR_DB[reg_input]["nombre"]
+    else:
+        s = str(reg_input)
+    s = s.replace("Victron ", "").replace(" de alta tensión", "")
+    s = re.sub(r'\s*\([^)]*\)', '', s)
+    s = re.sub(r'-Tr\b', '', s)
+    s = re.sub(r'-MC4\b', '', s)
+    s = re.sub(r'\s*VE\.Can\b', '', s)
+    return s.strip()
+
+def generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_info, inverter_name, filename):
+    fig, ax = plt.subplots(figsize=(11, 4.8), dpi=300)
+    ax.set_xlim(-0.4, 15.6)
+    ax.set_ylim(-0.4, 3.8)
     ax.axis('off')
     
     def draw_block(x, y, w, h, title, subtitle, bg_color, text_color="white"):
-        p = patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.08", facecolor=bg_color, edgecolor="none")
+        p = patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.04", facecolor=bg_color, edgecolor="none")
         ax.add_patch(p)
-        ax.text(x + w/2, y + h*0.6, title, fontsize=7.5, fontweight='bold', color=text_color, ha='center', va='center')
-        ax.text(x + w/2, y + h*0.25, subtitle, fontsize=6.5, color=text_color, ha='center', va='center')
+        ax.text(x + w/2, y + h*0.70, title, fontsize=7.5, fontweight='bold', color=text_color, ha='center', va='center')
+        ax.text(x + w/2, y + h*0.32, subtitle, fontsize=6.0, color=text_color, ha='center', va='center', multialignment='center')
         
     # 1. Panels Block
-    draw_block(0, 2.0, 2.2, 0.9, "GENERACION SOL", f"{total_panels_configured} Placas LONGi\n({total_pv_power_real/1000:.2f} kWp)", "#0284c7")
+    draw_block(0.0, 2.0, 2.3, 0.9, "GENERACION SOL", f"{total_panels_configured} Placas LONGi\n({total_pv_power_real/1000:.2f} kWp)", "#0284c7")
     
     # 2. Gave CC Box Block
-    draw_block(2.8, 2.0, 2.2, 0.9, "PROTECCIONES CC", "Caja Gave Solartec\n(Sobretensiones TII)", "#475569")
+    draw_block(2.7, 2.0, 2.3, 0.9, "PROTECCIONES CC", "Caja Gave Solartec\n(Sobretensiones TII)", "#475569")
     
     # 3. MPPT Regulator Block
-    reg_name = "SmartSolar MPPT" if regulator_ref == "SCC125110412" else "SmartSolar MPPT RS"
-    draw_block(5.6, 2.0, 2.2, 0.9, "REGULADOR MPPT", f"Victron {reg_name}\n(Carga Inteligente)", "#ea580c")
+    mppt_short = clean_mppt_label(regulator_info)
+    draw_block(5.4, 2.0, 2.3, 0.9, "REGULADOR MPPT", f"{mppt_short}\n(Carga Inteligente)", "#ea580c")
     
     # 4. Lynx Power In CC Busbar
-    draw_block(8.4, 1.0, 2.2, 0.9, "DISTRIBUCION CC", "Victron Lynx Power In\n(CC Centralizado)", "#334155")
+    draw_block(8.1, 1.0, 2.3, 0.9, "DISTRIBUCION CC", "Victron Lynx Power In\n(CC Centralizado)", "#334155")
     
     # 5. Batteries Block
-    draw_block(5.6, 0.0, 2.2, 0.9, "ACUMULACION", f"{batteries_qty} Baterias TBB\n({batteries_qty*5.04:.1f} kWh)", "#002f54")
+    draw_block(5.4, 0.0, 2.3, 0.9, "ACUMULACION", f"{batteries_qty} Baterias TBB\n({batteries_qty*5.04:.1f} kWh)", "#002f54")
     
     # 6. Inverter Block
-    inv_label = inverter_name.replace("Victron ", "").split(" (")[0]
-    draw_block(11.2, 1.0, 2.2, 0.9, "INVERSOR / CARG.", f"{inv_label}\n(48V a 230V CA)", "#1e3a8a")
+    inv_short = clean_inverter_label(inverter_name)
+    draw_block(10.8, 1.0, 2.3, 0.9, "INVERSOR / CARG.", f"Victron {inv_short}\n(48V a 230V CA)", "#1e3a8a")
     
     # 7. AC Loads Block
-    draw_block(14.0, 1.0, 1.2, 0.9, "VIVIENDA", "Consumos\nCA 230V", "#16a34a")
+    draw_block(13.5, 1.0, 1.5, 0.9, "VIVIENDA", "Consumos\nCA 230V", "#16a34a")
     
     # 8. Generator Block (Optional)
     if has_generator == "Sí":
-        draw_block(11.2, 2.8, 2.2, 0.7, "G. ELECTROGENO", "Grupo Auxiliar\n(Entrada AC-In)", "#dc2626")
+        draw_block(10.8, 2.7, 2.3, 0.7, "G. ELECTROGENO", "Grupo Auxiliar\n(Entrada AC-In)", "#dc2626")
         
     # Draw Arrows with custom markers
     def draw_arrow(x1, y1, x2, y2, label=""):
         ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
                     arrowprops=dict(arrowstyle="-|>", lw=1.2, color="#64748b", mutation_scale=10))
         if label:
-            if x1 == 12.3: # Vertical arrow
-                ax.text(12.0, 2.35, "AC", fontsize=6, fontweight='bold', color="#475569", ha='right', va='center')
+            if x1 == 11.95: # Vertical arrow from generator
+                ax.text(11.7, 2.25, "AC", fontsize=6, fontweight='bold', color="#475569", ha='right', va='center')
             else:
-                ax.text((x1+x2)/2, (y1+y2)/2 + 0.15, label, fontsize=6, fontweight='bold', color="#475569", ha='center', va='center')
+                ax.text((x1+x2)/2, (y1+y2)/2 + 0.12, label, fontsize=6, fontweight='bold', color="#475569", ha='center', va='center')
             
     # Connect Blocks
-    draw_arrow(2.2, 2.45, 2.8, 2.45, "CC") # Panels -> Gave
-    draw_arrow(5.0, 2.45, 5.6, 2.45, "CC") # Gave -> MPPT
-    draw_arrow(7.8, 2.45, 8.4, 1.7, "CC") # MPPT -> Lynx (angle)
-    draw_arrow(7.8, 0.45, 8.4, 1.2, "48V") # Batteries -> Lynx (angle)
-    draw_arrow(10.6, 1.45, 11.2, 1.45, "48V") # Lynx -> Inverter
-    draw_arrow(13.4, 1.45, 14.0, 1.45, "230V") # Inverter -> Loads
+    draw_arrow(2.3, 2.45, 2.7, 2.45, "CC") # Panels -> Gave
+    draw_arrow(5.0, 2.45, 5.4, 2.45, "CC") # Gave -> MPPT
+    draw_arrow(7.7, 2.45, 8.1, 1.7, "CC") # MPPT -> Lynx
+    draw_arrow(7.7, 0.45, 8.1, 1.2, "48V") # Batteries -> Lynx
+    draw_arrow(10.4, 1.45, 10.8, 1.45, "48V") # Lynx -> Inverter
+    draw_arrow(13.1, 1.45, 13.5, 1.45, "230V") # Inverter -> Loads
     
     if has_generator == "Sí":
-        draw_arrow(12.3, 2.8, 12.3, 1.9, "AC") # Generator -> Inverter
+        draw_arrow(11.95, 2.7, 11.95, 1.9, "AC") # Generator -> Inverter
         
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
