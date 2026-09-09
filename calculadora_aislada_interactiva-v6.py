@@ -701,6 +701,8 @@ with tab1:
     
     # Paneles Sizing
     st.markdown("---")
+    # Paneles Sizing
+    st.markdown("---")
     st.subheader("📊 Resultados de Dimensionamiento")
     
     # Selector de paneles y modo de ajuste
@@ -816,6 +818,89 @@ with tab1:
         else:
             st.warning(f"⚠️ **Cobertura Solar Parcial ({solar_coverage_pct:.0f}%):** La generación solar estimada en invierno (**{daily_pv_generation_net_kwh:.2f} kWh/día**) es inferior a la demanda diaria (**{daily_consumption_kwh:.2f} kWh/día**). Déficit diario de **{daily_consumption_kwh - daily_pv_generation_net_kwh:.2f} kWh/día**.")
 
+    # ── SELECCIÓN DE ELECTRÓNICA DE POTENCIA EN PÁGINA PRINCIPAL ──
+    st.markdown("---")
+    st.markdown("### 🔌 SELECCIÓN DE ELECTRÓNICA DE POTENCIA (INVERSOR Y REGULADOR)")
+    st.markdown("Ajusta o confirma la selección de equipos Victron Energy para la instalación:")
+
+    col_inv, col_reg = st.columns(2)
+    
+    with col_inv:
+        st.markdown("#### ⚡ Inversor / Cargador Victron MultiPlus-II")
+        auto_inverter_ref = "PMP482305010"
+        if power_va < 3000:
+            auto_inverter_ref = "PMP482305010"
+        elif power_va < 5000:
+            auto_inverter_ref = "PMP482505012"
+        elif power_va < 8000:
+            auto_inverter_ref = "PMP482805000"
+        elif power_va < 10000:
+            auto_inverter_ref = "PMP483105000"
+        else:
+            auto_inverter_ref = "PMP483150000"
+            
+        manual_inverter_choice = st.selectbox(
+            "Seleccionar Inversor / Cargador",
+            ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in INVERTER_DB.items()],
+            key='manual_inverter'
+        )
+        
+        if manual_inverter_choice == "Automático (Recomendado)":
+            final_inverter_ref = auto_inverter_ref
+            st.caption(f"✨ **Recomendación Automática ({power_va:.0f} VA):** `{INVERTER_DB[auto_inverter_ref]['nombre']}`")
+        else:
+            final_inverter_ref = manual_inverter_choice.split(" - ")[0]
+            st.caption(f"🔧 **Inversor Seleccionado Manualmente:** `{INVERTER_DB[final_inverter_ref]['nombre']}`")
+            
+        inverter_specs = INVERTER_DB[final_inverter_ref]
+
+    with col_reg:
+        st.markdown("#### ☀️ Regulador de Carga Solar Victron SmartSolar")
+        temp_factor_calc = 1.078
+        string_voc_cold_calc = panels_per_row * panel_specs["voc"] * temp_factor_calc if panels_per_row > 0 else 0
+        total_isc_calc = num_rows * panel_specs["isc"]
+        
+        if string_voc_cold_calc <= 250.0 and total_isc_calc <= 70.0 and total_pv_power_real <= 7500:
+            auto_regulator_ref = "SCC125110412"
+        else:
+            auto_regulator_ref = "SCC145110512"
+            
+        manual_regulator_choice_val = st.selectbox(
+            "Seleccionar Regulador de Carga",
+            ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in REGULATOR_DB.items()],
+            key='manual_regulator'
+        )
+        
+        if manual_regulator_choice_val == "Automático (Recomendado)":
+            final_regulator_ref = auto_regulator_ref
+            st.caption(f"✨ **Recomendación Automática ({total_pv_power_real/1000:.2f} kWp):** `{REGULATOR_DB[auto_regulator_ref]['nombre'].split(' (')[0]}`")
+        else:
+            final_regulator_ref = manual_regulator_choice_val.split(" - ")[0]
+            st.caption(f"🔧 **Regulador Seleccionado Manualmente:** `{REGULATOR_DB[final_regulator_ref]['nombre'].split(' (')[0]}`")
+            
+        reg_specs = REGULATOR_DB[final_regulator_ref]
+        regulator_ref = final_regulator_ref
+        regulator_name = reg_specs["nombre"]
+        regulator_pvp = reg_specs["pvp"]
+
+    # Verificación de Seguridad Eléctrica
+    dangers, warnings = check_regulator_safety(
+        regulator_ref=regulator_ref,
+        total_pv_power_real=total_pv_power_real,
+        panels_per_row=panels_per_row,
+        panel_voc=panel_specs["voc"],
+        num_rows=num_rows,
+        panel_isc=panel_specs["isc"]
+    )
+
+    if dangers or warnings:
+        st.markdown("<div style='padding-top:10px;'></div>", unsafe_allow_html=True)
+        st.markdown("#### 🚨 VERIFICACIÓN DE SEGURIDAD ELÉCTRICA")
+        for danger in dangers:
+            st.error(danger)
+        for warning in warnings:
+            st.warning(warning)
+
     # ── PARÁMETROS ELÉCTRICOS DEL CAMPO SOLAR (VICTRON MPPT CALCULATOR) ──
     temp_factor_ui = 1.078
     string_voc_stc_ui = panels_per_row * panel_specs["voc"]
@@ -833,121 +918,8 @@ with tab1:
         with col_e3:
             st.metric("Tensión Vmp Trabajo", f"{string_vmp_stc_ui:.1f} V", f"{panels_per_row}x {panel_specs['vmp']}V")
         with col_e4:
-            st.metric("Corriente Isc Campo ({num_rows}P)", f"{total_isc_ui:.2f} A", f"Imp Trabajo: {total_imp_ui:.2f} A")
+            st.metric(f"Corriente Isc Campo ({num_rows}P)", f"{total_isc_ui:.2f} A", f"Imp Trabajo: {total_imp_ui:.2f} A")
 
-    # ── CÓMPUTO GLOBAL DEL LISTADO DE MATERIALES (BOM) ──
-    auto_inverter_ref = "PMP482305010"
-    if power_va < 3000:
-        auto_inverter_ref = "PMP482305010"
-    elif power_va < 5000:
-        auto_inverter_ref = "PMP482505012"
-    elif power_va < 8000:
-        auto_inverter_ref = "PMP482805000"
-    elif power_va < 10000:
-        auto_inverter_ref = "PMP483105000"
-    else:
-        auto_inverter_ref = "PMP483150000"
-        
-    manual_inverter_choice = st.session_state.get('manual_inverter', "Automático (Recomendado)")
-    
-    if manual_inverter_choice == "Automático (Recomendado)":
-        final_inverter_ref = auto_inverter_ref
-    else:
-        final_inverter_ref = manual_inverter_choice.split(" - ")[0]
-        
-    inverter_specs = INVERTER_DB[final_inverter_ref]
-    
-    # 2. Regulator Sizing & Manual Override
-    temp_factor_calc = 1.078
-    string_voc_cold_calc = panels_per_row * panel_specs["voc"] * temp_factor_calc if panels_per_row > 0 else 0
-    total_isc_calc = num_rows * panel_specs["isc"]
-    
-    if string_voc_cold_calc <= 250.0 and total_isc_calc <= 70.0 and total_pv_power_real <= 7500:
-        auto_regulator_ref = "SCC125110412"
-    else:
-        auto_regulator_ref = "SCC145110512"
-    manual_regulator_choice = st.session_state.get('manual_regulator', "Automático (Recomendado)")
-    
-    if manual_regulator_choice == "Automático (Recomendado)":
-        final_regulator_ref = auto_regulator_ref
-    else:
-        final_regulator_ref = manual_regulator_choice.split(" - ")[0]
-        
-    reg_specs = REGULATOR_DB[final_regulator_ref]
-    regulator_ref = final_regulator_ref
-    regulator_name = reg_specs["nombre"]
-    regulator_pvp = reg_specs["pvp"]
-    
-    # Verificación de Seguridad Eléctrica
-    dangers, warnings = check_regulator_safety(
-        regulator_ref=regulator_ref,
-        total_pv_power_real=total_pv_power_real,
-        panels_per_row=panels_per_row,
-        panel_voc=panel_specs["voc"],
-        num_rows=num_rows,
-        panel_isc=panel_specs["isc"]
-    )
-
-    if dangers or warnings:
-        st.markdown("<div style='padding-top:10px;'></div>", unsafe_allow_html=True)
-        st.markdown("### 🚨 VERIFICACIÓN DE SEGURIDAD ELÉCTRICA")
-        for danger in dangers:
-            st.error(danger)
-        for warning in warnings:
-            st.warning(warning)
-    # ── CÓMPUTO GLOBAL DEL LISTADO DE MATERIALES (BOM) ──
-    auto_inverter_ref = "PMP482305010"
-    if power_va < 3000:
-        auto_inverter_ref = "PMP482305010"
-    elif power_va < 5000:
-        auto_inverter_ref = "PMP482505012"
-    elif power_va < 8000:
-        auto_inverter_ref = "PMP482805000"
-    elif power_va < 10000:
-        auto_inverter_ref = "PMP483105000"
-    else:
-        auto_inverter_ref = "PMP483150000"
-        
-    manual_inverter_choice = st.session_state.get('manual_inverter', "Automático (Recomendado)")
-    
-    if manual_inverter_choice == "Automático (Recomendado)":
-        final_inverter_ref = auto_inverter_ref
-    else:
-        final_inverter_ref = manual_inverter_choice.split(" - ")[0]
-        
-    inverter_specs = INVERTER_DB[final_inverter_ref]
-    
-    # 2. Regulator Sizing & Manual Override
-    temp_factor_calc = 1.078
-    string_voc_cold_calc = panels_per_row * panel_specs["voc"] * temp_factor_calc if panels_per_row > 0 else 0
-    total_isc_calc = num_rows * panel_specs["isc"]
-    
-    if string_voc_cold_calc <= 250.0 and total_isc_calc <= 70.0 and total_pv_power_real <= 7500:
-        auto_regulator_ref = "SCC125110412"
-    else:
-        auto_regulator_ref = "SCC145110512"
-    manual_regulator_choice = st.session_state.get('manual_regulator', "Automático (Recomendado)")
-    
-    if manual_regulator_choice == "Automático (Recomendado)":
-        final_regulator_ref = auto_regulator_ref
-    else:
-        final_regulator_ref = manual_regulator_choice.split(" - ")[0]
-        
-    reg_specs = REGULATOR_DB[final_regulator_ref]
-    regulator_ref = final_regulator_ref
-    regulator_name = reg_specs["nombre"]
-    regulator_pvp = reg_specs["pvp"]
-    
-    # Verificación de Seguridad Eléctrica
-    dangers, warnings = check_regulator_safety(
-        regulator_ref=regulator_ref,
-        total_pv_power_real=total_pv_power_real,
-        panels_per_row=panels_per_row,
-        panel_voc=panel_specs["voc"],
-        num_rows=num_rows,
-        panel_isc=panel_specs["isc"]
-    )
-        
     # 3. Gave Box selection
     if regulator_ref == "SCC125110412":
         gave_ref = "STM40480P20"
@@ -1362,7 +1334,6 @@ with tab1:
     df_display = df_bom[["Categoría", "Referencia", "Descripción", "Cantidad", "Unidad", "PVP Tarifa (€)", "Descuento", "Precio Unit. Neto (€)", "Precio Total Neto (€)"]]
     total_net = df_bom["Precio Total Neto (€)"].sum()
 
-
     st.markdown("---")
     st.subheader("📄 Generar Resumen del Proyecto en PDF")
     st.markdown("Genera un informe técnico corporativo en PDF (2 páginas) con los consumos, dimensionamiento, secuencia de arranque y un **croquis técnico del flujo de energía**.")
@@ -1413,30 +1384,6 @@ with tab2:
     st.subheader("📦 Resumen de Materiales y Presupuesto Inteligente (BOM)")
     st.markdown("La calculadora selecciona dinámicamente las referencias de catálogo y calcula el presupuesto a PVP de tarifa oficial (sin descuentos aplicados):")
     
-    # 1. Inverter Sizing & Manual Override
-    manual_inverter_choice = st.selectbox(
-        "Forzar Inversor / Cargador (Opcional)",
-        ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in INVERTER_DB.items()],
-        key='manual_inverter'
-    )
-    
-    # 2. Regulator Sizing & Manual Override
-    manual_regulator_choice_val = st.selectbox(
-        "Forzar Regulador de Carga (Opcional)",
-        ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in REGULATOR_DB.items()],
-        key='manual_regulator'
-    )
-    
-    if dangers or warnings:
-        st.markdown("<div style='padding-top:10px;'></div>", unsafe_allow_html=True)
-        st.markdown("#### 🛡️ Alertas de Seguridad Eléctrica")
-        for danger in dangers:
-            st.error(danger)
-        for warning in warnings:
-            st.warning(warning)
-    
-    
-    
     # Filtro opcional por categorías en móvil
     cat_filter = st.multiselect("Filtrar por Categoría (BOM)", list(df_display["Categoría"].unique()), default=None)
     if cat_filter:
@@ -1465,7 +1412,6 @@ with tab2:
             file_name="presupuesto_solar_novelec.csv",
             mime="text/csv"
         )
-
 with tab3:
     st.subheader("⚡ Manual de Obra y Secuencia de Arranque Segura")
     
