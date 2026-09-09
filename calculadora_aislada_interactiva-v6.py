@@ -111,222 +111,137 @@ PANELS_DB = {
 }
 
 INVERTER_DB = {
-    "PMP482305010": {"nombre": "Victron MultiPlus-II 48/3000/35-32", "pvp": 624.0, "current": 100, "charger_current": 35},
-    "PMP482505012": {"nombre": "Victron MultiPlus-II 48/5000/70-50", "pvp": 844.0, "current": 200, "charger_current": 70},
-    "PMP482805000": {"nombre": "Victron MultiPlus-II 48/8000/110-100", "pvp": 1551.0, "current": 300, "charger_current": 110},
-    "PMP483105000": {"nombre": "Victron MultiPlus-II 48/10000/140-100", "pvp": 1853.0, "current": 400, "charger_current": 140},
-    "PMP483150000": {"nombre": "Victron MultiPlus-II 48/15000/200-100", "pvp": 2585.0, "current": 500, "charger_current": 200}
+    "PMP482305010": {"nombre": "Victron MultiPlus-II 48/3000/35-32", "pvp": 624.0, "va": 3000, "current": 100, "charger_current": 35},
+    "PMP482306000": {"nombre": "Victron MultiPlus-II 48/3000/35-32 GX (Cerbo int.)", "pvp": 711.0, "va": 3000, "current": 100, "charger_current": 35},
+    "PMP482405012": {"nombre": "Victron MultiPlus-II 48/4k5/55-32", "pvp": 769.0, "va": 4500, "current": 150, "charger_current": 55},
+    "PMP482406000": {"nombre": "Victron MultiPlus-II 48/4k5/55-32 GX (Cerbo int.)", "pvp": 905.0, "va": 4500, "current": 150, "charger_current": 55},
+    "PMP482505010": {"nombre": "Victron MultiPlus-II 48/5000/70-50", "pvp": 844.0, "va": 5000, "current": 200, "charger_current": 70},
+    "PMP482506000": {"nombre": "Victron MultiPlus-II 48/5000/70-50 GX (Cerbo int.)", "pvp": 1041.0, "va": 5000, "current": 200, "charger_current": 70},
+    "PMP482605012": {"nombre": "Victron MultiPlus-II 48/6K5/100-50", "pvp": 977.0, "va": 6500, "current": 250, "charger_current": 100},
+    "PMP482606000": {"nombre": "Victron MultiPlus-II 48/6K5/100-50 GX (Cerbo int.)", "pvp": 1162.0, "va": 6500, "current": 250, "charger_current": 100},
+    "PMP482805000": {"nombre": "Victron MultiPlus-II 48/8000/110-100", "pvp": 1551.0, "va": 8000, "current": 300, "charger_current": 110},
+    "PMP483105000": {"nombre": "Victron MultiPlus-II 48/10000/140-100", "pvp": 1853.0, "va": 10000, "current": 400, "charger_current": 140},
+    "PMP483150000": {"nombre": "Victron MultiPlus-II 48/15000/200-100", "pvp": 2585.0, "va": 15000, "current": 500, "charger_current": 200},
+    "PIN482201000": {"nombre": "Victron Phoenix Inverter 48/2000 230V Smart", "pvp": 499.0, "va": 2000, "current": 60, "charger_current": 0},
+    "PIN482300000": {"nombre": "Victron Phoenix Inverter 48/3000 230V Smart", "pvp": 638.0, "va": 3000, "current": 100, "charger_current": 0},
+    "PIN482500000": {"nombre": "Victron Phoenix Inverter 48/5000 230V Smart", "pvp": 956.0, "va": 5000, "current": 200, "charger_current": 0},
+    "PIN482600000": {"nombre": "Victron Inverter RS 48/6000 230V Smart", "pvp": 1233.0, "va": 6000, "current": 250, "charger_current": 0},
+    "PIN482601000": {"nombre": "Victron Inverter RS 48/6000 230V Smart Solar", "pvp": 1709.0, "va": 6000, "current": 250, "charger_current": 0},
+    "PMP481500000": {"nombre": "Victron MultiPlus 48/500/6-16", "pvp": 276.0, "va": 500, "current": 15, "charger_current": 6},
+    "PMP481800000": {"nombre": "Victron MultiPlus 48/800/9-16", "pvp": 325.0, "va": 800, "current": 25, "charger_current": 9},
+    "PMP482120000": {"nombre": "Victron MultiPlus 48/1200/13-16", "pvp": 454.0, "va": 1200, "current": 35, "charger_current": 13},
+    "PMP482160000": {"nombre": "Victron MultiPlus 48/1600/20-16", "pvp": 515.0, "va": 1600, "current": 50, "charger_current": 20},
+    "PMP482200000": {"nombre": "Victron MultiPlus 48/2000/25-32", "pvp": 574.0, "va": 2000, "current": 60, "charger_current": 25},
+    "PMP483020001": {"nombre": "Victron MultiPlus 48/3000/35-16", "pvp": 875.0, "va": 3000, "current": 100, "charger_current": 35},
+    "PMP483021010": {"nombre": "Victron MultiPlus 48/3000/35-50", "pvp": 914.0, "va": 3000, "current": 100, "charger_current": 35},
+    "PMP485021010": {"nombre": "Victron MultiPlus 48/5000/70-100", "pvp": 1239.0, "va": 5000, "current": 200, "charger_current": 70},
+    "PMC483200400": {"nombre": "Victron MultiPlus 48/20000/250-100", "pvp": 3048.0, "va": 20000, "current": 600, "charger_current": 250},
+    "PMR482602020": {"nombre": "Victron Multi RS Solar 48/6000/100-450/100 Híbrido", "pvp": 1635.0, "va": 6000, "current": 250, "charger_current": 100},
+    "PMR482604000": {"nombre": "Victron Multi RS 48/6000/100-50 230V", "pvp": 1476.0, "va": 6000, "current": 250, "charger_current": 100},
+    "QUA485021010": {"nombre": "Victron Quattro 48/5000/70-100/100", "pvp": 1764.0, "va": 5000, "current": 200, "charger_current": 70},
+    "QUA482504010": {"nombre": "Victron Quattro-II 48/5000/70-50/50", "pvp": 1191.0, "va": 5000, "current": 200, "charger_current": 70},
+    "QUA488024000": {"nombre": "Victron Quattro 48/8000/110-100/100", "pvp": 1996.0, "va": 8000, "current": 300, "charger_current": 110},
+    "QUA481030010": {"nombre": "Victron Quattro 48/10000/140-100/100", "pvp": 2385.0, "va": 10000, "current": 400, "charger_current": 140},
+    "QUA483150000": {"nombre": "Victron Quattro 48/15000/200-100/100", "pvp": 3133.0, "va": 15000, "current": 500, "charger_current": 200}
 }
 
 REGULATOR_DB = {
-    "SCC115035210": {
-        "nombre": "Victron SmartSolar MPPT 150/35 (12/24/48V, 35A)",
-        "pvp": 197.00,
-        "max_current": 35,
-        "max_voc": 150,
-        "max_power": 2000,
-        "max_isc": 40,
-        "min_voc": 0
-    },
-    "SCC115045212": {
-        "nombre": "Victron SmartSolar MPPT 150/45 (12/24/48V, 45A)",
-        "pvp": 233.00,
-        "max_current": 45,
-        "max_voc": 150,
-        "max_power": 2600,
-        "max_isc": 50,
-        "min_voc": 0
-    },
-    "SCC115060211": {
-        "nombre": "Victron SmartSolar MPPT 150/60-Tr (12/24/48V, 60A)",
-        "pvp": 375.00,
-        "max_current": 60,
-        "max_voc": 150,
-        "max_power": 3400,
-        "max_isc": 50,
-        "min_voc": 0
-    },
-    "SCC115070411": {
-        "nombre": "Victron SmartSolar MPPT 150/70-Tr VE.Can",
-        "pvp": 443.00,
-        "max_current": 70,
-        "max_voc": 150,
-        "max_power": 4000,
-        "max_isc": 50,
-        "min_voc": 0
-    },
-    "SCC115085411": {
-        "nombre": "Victron SmartSolar MPPT 150/85-Tr VE.Can",
-        "pvp": 483.00,
-        "max_current": 85,
-        "max_voc": 150,
-        "max_power": 4900,
-        "max_isc": 70,
-        "min_voc": 0
-    },
-    "SCC115110411": {
-        "nombre": "Victron SmartSolar MPPT 150/100-Tr VE.Can",
-        "pvp": 552.00,
-        "max_current": 100,
-        "max_voc": 150,
-        "max_power": 5800,
-        "max_isc": 70,
-        "min_voc": 0
-    },
-    "SCC125060221": {
-        "nombre": "Victron SmartSolar MPPT 250/60-Tr",
-        "pvp": 443.00,
-        "max_current": 60,
-        "max_voc": 250,
-        "max_power": 3400,
-        "max_isc": 50,
-        "min_voc": 0
-    },
-    "SCC125070421": {
-        "nombre": "Victron SmartSolar MPPT 250/70-Tr VE.Can",
-        "pvp": 545.00,
-        "max_current": 70,
-        "max_voc": 250,
-        "max_power": 4000,
-        "max_isc": 50,
-        "min_voc": 0
-    },
-    "SCC125085411": {
-        "nombre": "Victron SmartSolar MPPT 250/85-Tr VE.Can",
-        "pvp": 586.00,
-        "max_current": 85,
-        "max_voc": 250,
-        "max_power": 4900,
-        "max_isc": 70,
-        "min_voc": 0
-    },
-    "SCC125110412": {
-        "nombre": "Victron SmartSolar MPPT 250/100-Tr VE.Can",
-        "pvp": 654.00,
-        "max_current": 100,
-        "max_voc": 250,
-        "max_power": 5800,
-        "max_isc": 70,
-        "min_voc": 0
-    },
-    "SCC145110512": {
-        "nombre": "Victron SmartSolar MPPT RS 450/100-MC4 (2 seguidores de alta tensión)",
-        "pvp": 1182.00,
-        "max_current": 100,
-        "max_voc": 450,
-        "max_power": 11500,
-        "max_isc": 50,
-        "min_voc": 120
-    },
-    "SCC145120512": {
-        "nombre": "Victron SmartSolar MPPT RS 450/200-MC4 (2 seguidores de alta tensión)",
-        "pvp": 2069.00,
-        "max_current": 200,
-        "max_voc": 450,
-        "max_power": 23000,
-        "max_isc": 50,
-        "min_voc": 120
-    }
+    "SCC075010060R": {"nombre": "SmartSolar MPPT 75/10 (12/24V, 10A)", "pvp": 63.0, "max_current": 10, "max_voc": 75, "max_power": 580, "max_isc": 20, "min_voc": 0, "supports_48v": False},
+    "SCC075015060R": {"nombre": "SmartSolar MPPT 75/15 (12/24V, 15A)", "pvp": 68.0, "max_current": 15, "max_voc": 75, "max_power": 870, "max_isc": 20, "min_voc": 0, "supports_48v": False},
+    "SCC110015060R": {"nombre": "SmartSolar MPPT 100/15 (12/24V, 15A)", "pvp": 84.0, "max_current": 15, "max_voc": 100, "max_power": 870, "max_isc": 20, "min_voc": 0, "supports_48v": False},
+    "SCC110020160R": {"nombre": "SmartSolar MPPT 100/20 (12/24/48V, 20A)", "pvp": 96.0, "max_current": 20, "max_voc": 100, "max_power": 1160, "max_isc": 20, "min_voc": 0, "supports_48v": True},
+    "SCC110030210": {"nombre": "SmartSolar MPPT 100/30 (12/24V, 30A)", "pvp": 137.0, "max_current": 30, "max_voc": 100, "max_power": 1740, "max_isc": 40, "min_voc": 0, "supports_48v": False},
+    "SCC110050210": {"nombre": "SmartSolar MPPT 100/50 (12/24V, 50A)", "pvp": 197.0, "max_current": 50, "max_voc": 100, "max_power": 2900, "max_isc": 50, "min_voc": 0, "supports_48v": False},
+    "SCC115035210": {"nombre": "SmartSolar MPPT 150/35 (12/24/48V, 35A)", "pvp": 197.0, "max_current": 35, "max_voc": 150, "max_power": 2030, "max_isc": 40, "min_voc": 0, "supports_48v": True},
+    "SCC115045212": {"nombre": "SmartSolar MPPT 150/45 (12/24/48V, 45A)", "pvp": 233.0, "max_current": 45, "max_voc": 150, "max_power": 2610, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC115060211": {"nombre": "SmartSolar MPPT 150/60-Tr (12/24/48V, 60A)", "pvp": 375.0, "max_current": 60, "max_voc": 150, "max_power": 3480, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC115060311": {"nombre": "SmartSolar MPPT 150/60-MC4 (12/24/48V, 60A)", "pvp": 375.0, "max_current": 60, "max_voc": 150, "max_power": 3480, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC115070211": {"nombre": "SmartSolar MPPT 150/70-Tr (12/24/48V, 70A)", "pvp": 409.0, "max_current": 70, "max_voc": 150, "max_power": 4060, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC115070411": {"nombre": "SmartSolar MPPT 150/70-Tr VE.Can", "pvp": 443.0, "max_current": 70, "max_voc": 150, "max_power": 4060, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC115070511": {"nombre": "SmartSolar MPPT 150/70-MC4 VE.Can", "pvp": 443.0, "max_current": 70, "max_voc": 150, "max_power": 4060, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC115085411": {"nombre": "SmartSolar MPPT 150/85-Tr VE.Can", "pvp": 483.0, "max_current": 85, "max_voc": 150, "max_power": 4930, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC115085511": {"nombre": "SmartSolar MPPT 150/85-MC4 VE.Can", "pvp": 494.0, "max_current": 85, "max_voc": 150, "max_power": 4930, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC115110411": {"nombre": "SmartSolar MPPT 150/100-Tr VE.Can", "pvp": 552.0, "max_current": 100, "max_voc": 150, "max_power": 5800, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC115110511": {"nombre": "SmartSolar MPPT 150/100-MC4 VE.Can", "pvp": 562.0, "max_current": 100, "max_voc": 150, "max_power": 5800, "max_isc": 50, "min_voc": 0, "supports_48v": True},
+    "SCC125060221": {"nombre": "SmartSolar MPPT 250/60-Tr", "pvp": 443.0, "max_current": 60, "max_voc": 250, "max_power": 3480, "max_isc": 70, "min_voc": 0, "supports_48v": True},
+    "SCC125060321": {"nombre": "SmartSolar MPPT 250/60-MC4", "pvp": 443.0, "max_current": 60, "max_voc": 250, "max_power": 3480, "max_isc": 70, "min_voc": 0, "supports_48v": True},
+    "SCC125070221": {"nombre": "SmartSolar MPPT 250/70-Tr", "pvp": 511.0, "max_current": 70, "max_voc": 250, "max_power": 4060, "max_isc": 70, "min_voc": 0, "supports_48v": True},
+    "SCC125070421": {"nombre": "SmartSolar MPPT 250/70-Tr VE.Can", "pvp": 545.0, "max_current": 70, "max_voc": 250, "max_power": 4060, "max_isc": 70, "min_voc": 0, "supports_48v": True},
+    "SCC125070521": {"nombre": "SmartSolar MPPT 250/70-MC4 VE.Can", "pvp": 545.0, "max_current": 70, "max_voc": 250, "max_power": 4060, "max_isc": 70, "min_voc": 0, "supports_48v": True},
+    "SCC125085411": {"nombre": "SmartSolar MPPT 250/85-Tr VE.Can", "pvp": 586.0, "max_current": 85, "max_voc": 250, "max_power": 4930, "max_isc": 70, "min_voc": 0, "supports_48v": True},
+    "SCC125085511": {"nombre": "SmartSolar MPPT 250/85-MC4 VE.Can", "pvp": 596.0, "max_current": 85, "max_voc": 250, "max_power": 4930, "max_isc": 70, "min_voc": 0, "supports_48v": True},
+    "SCC125110412": {"nombre": "SmartSolar MPPT 250/100-Tr VE.Can", "pvp": 654.0, "max_current": 100, "max_voc": 250, "max_power": 5800, "max_isc": 70, "min_voc": 0, "supports_48v": True},
+    "SCC125110512": {"nombre": "SmartSolar MPPT 250/100-MC4 VE.Can", "pvp": 664.0, "max_current": 100, "max_voc": 250, "max_power": 5800, "max_isc": 70, "min_voc": 0, "supports_48v": True},
+    "SCC145110512": {"nombre": "SmartSolar MPPT RS 450/100-MC4 de alta tensión", "pvp": 1182.0, "max_current": 100, "max_voc": 450, "max_power": 5800, "max_isc": 50, "min_voc": 120, "supports_48v": True},
+    "SCC145120512": {"nombre": "SmartSolar MPPT RS 450/200-MC4 de alta tensión", "pvp": 2069.0, "max_current": 200, "max_voc": 450, "max_power": 11600, "max_isc": 50, "min_voc": 120, "supports_48v": True}
 }
-
-MEGA_FUSES = [
-    {"rating": 60, "ref": "CIP138060020", "name": "Victron MEGA-fuse 60A/80V para CC (Paquete de 5 uds)"},
-    {"rating": 80, "ref": "CIP138080020", "name": "Victron MEGA-fuse 80A/80V para CC (Paquete de 5 uds)"},
-    {"rating": 100, "ref": "CIP138100020", "name": "Victron MEGA-fuse 100A/80V para CC (Paquete de 5 uds)"},
-    {"rating": 125, "ref": "CIP138125020", "name": "Victron MEGA-fuse 125A/80V para CC (Paquete de 5 uds)"},
-    {"rating": 150, "ref": "CIP138150020", "name": "Victron MEGA-fuse 150A/80V para CC (Paquete de 5 uds)"},
-    {"rating": 200, "ref": "CIP138200020", "name": "Victron MEGA-fuse 200A/80V para CC (Paquete de 5 uds)"},
-    {"rating": 250, "ref": "CIP138250020", "name": "Victron MEGA-fuse 250A/80V para CC (Paquete de 5 uds)"},
-    {"rating": 300, "ref": "CIP138300020", "name": "Victron MEGA-fuse 300A/80V para CC (Paquete de 5 uds)"},
-    {"rating": 400, "ref": "CIP138400020", "name": "Victron MEGA-fuse 400A/80V para CC (Paquete de 5 uds)"},
-    {"rating": 500, "ref": "CIP138500020", "name": "Victron MEGA-fuse 500A/80V para CC (Paquete de 5 uds)"}
-]
-
-def select_victron_fuse(target_current, apply_safety_factor=True):
-    req = target_current * 1.25 if apply_safety_factor else target_current
-    for f in MEGA_FUSES:
-        if f["rating"] >= req:
-            return f
-    return MEGA_FUSES[-1]
-
-
-# ────────────────────────────────────────────────────────────────────────
-# VERIFICACIÓN DE SEGURIDAD ELÉCTRICA Y RIESGOS EN REGULADORES DE CARGA
-# ────────────────────────────────────────────────────────────────────────
 
 def check_regulator_safety(regulator_ref, total_pv_power_real, S_series, P_parallel, panel_voc, panel_isc, temp_factor=1.078):
     dangers = []
     warnings = []
     
-    reg_info = REGULATOR_DB.get(regulator_ref, REGULATOR_DB["SCC125110412"])
-    reg_name = reg_info["nombre"].split(" (")[0]
-    max_voc = float(reg_info.get("max_voc", 250.0))
-    max_isc = float(reg_info.get("max_isc", 70.0))
-    max_power = float(reg_info.get("max_power", 5800.0))
-    min_voc = float(reg_info.get("min_voc", 0.0))
-    max_current = reg_info.get("max_current", 100)
+    if regulator_ref not in REGULATOR_DB:
+        return dangers, warnings
+        
+    spec = REGULATOR_DB[regulator_ref]
     
+    # 1. Tensión de Batería 48V
+    if not spec.get('supports_48v', True):
+        dangers.append(
+            f"🛑 **Tensión de Batería Incompatible:** El regulador **{spec['nombre']}** sólo admite sistemas de 12V/24V "
+            f"y NO es compatible con el banco de baterías de litio TBB de 48V."
+        )
+        
     string_voc_stc = S_series * panel_voc
     string_voc_temp = string_voc_stc * temp_factor if S_series > 0 else 0
     total_isc = P_parallel * panel_isc
+    max_voc_limit = float(spec['max_voc'])
+    min_voc_limit = float(spec.get('min_voc', 0))
+    max_isc_limit = float(spec.get('max_isc', 50))
+    max_power_rec = float(spec.get('max_power', 5800))
     
-    # 1. Minimum start voltage check
-    if min_voc > 0 and string_voc_stc < min_voc and total_pv_power_real > 0:
+    # 2. Límite de tensión máxima (Voc)
+    if string_voc_temp > max_voc_limit:
+        dangers.append(
+            f"💥 **Riesgo de Destrucción Irreversible:** La tensión Voc de string ({S_series} en serie) "
+            f"corregida por temperatura (-5 ºC en Girona) es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **{max_voc_limit:.0f} V** "
+            f"del {spec['nombre']}. ¡Destruirá el regulador y anulará la garantía!"
+        )
+    elif string_voc_temp > (max_voc_limit * 0.92):
+        warnings.append(
+            f"⚠️ **Tensión de string elevada:** La tensión estimada a baja temperatura (-5 ºC) es de **{string_voc_temp:.1f} V**. "
+            f"Está muy cerca del límite máximo de {max_voc_limit:.0f} V del equipo."
+        )
+        
+    # 3. Tensión mínima de arranque
+    if min_voc_limit > 0 and string_voc_stc < min_voc_limit and total_pv_power_real > 0:
         dangers.append(
             f"🛑 **El Regulador NO Arrancará:** La tensión nominal solar (**{string_voc_stc:.1f} V**) es inferior "
-            f"al umbral mínimo de arranque de **{min_voc:.0f} VCC** del {reg_name}. "
+            f"al umbral mínimo de arranque de **{min_voc_limit:.0f} VCC** del {spec['nombre']}. "
             f"Con cadenas de solo {S_series} paneles en serie, el regulador jamás se activará."
         )
         
-    # 2. Maximum Voc voltage check
-    if string_voc_temp > max_voc:
-        dangers.append(
-            f"💥 **Riesgo de Destrucción Irreversible:** La tensión Voc de string ({S_series} en serie) "
-            f"corregida por temperatura (-5 ºC en Girona) es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **{max_voc:.0f} V** "
-            f"del {reg_name}. ¡Conectar {S_series} paneles en serie destruirá el regulador y anulará la garantía!"
-        )
-    elif string_voc_temp > max_voc - 15.0 and max_voc <= 250.0:
-        warnings.append(
-            f"⚠️ **Tensión de string elevada:** La tensión estimada a baja temperatura (-5 ºC) es de **{string_voc_temp:.1f} V**. "
-            f"Está muy cerca del límite máximo de {max_voc:.0f} V del equipo."
-        )
-        
-    # 3. Maximum Isc short-circuit current check
-    if total_isc > max_isc:
+    # 4. Límite de corriente de cortocircuito (Isc)
+    if total_isc > max_isc_limit:
         dangers.append(
             f"🔥 **Sobrecorriente CC Crítica:** La corriente total de cortocircuito de los {P_parallel} strings en paralelo "
-            f"es de **{total_isc:.2f} A**, superando el límite máximo admitido de **{max_isc:.0f} A** del {reg_name}. Existe riesgo de arco eléctrico."
+            f"es de **{total_isc:.2f} A**, superando el límite máximo admitido de **{max_isc_limit:.0f} A** del {spec['nombre']}."
         )
         
-    # 4. Power / Clipping check
-    if total_pv_power_real > max_power * 1.35:
+    # 5. Potencia FV y Clipping / Compatibilidad Victron Calculator
+    if total_pv_power_real > (max_power_rec * 1.35):
         warnings.append(
             f"⚠️ **Exceso de Potencia FV:** La potencia total del campo solar (**{total_pv_power_real/1000:.2f} kWp**) "
-            f"supera holgadamente la capacidad recomendada ({max_power/1000:.1f} kWp) para el {reg_name}."
+            f"supera holgadamente la recomendación máxima de **{max_power_rec/1000:.2f} kWp** para el {spec['nombre']}."
         )
-    elif max_power < total_pv_power_real <= max_power * 1.35 and string_voc_temp <= max_voc and total_isc <= max_isc:
+    elif max_power_rec < total_pv_power_real <= (max_power_rec * 1.35) and string_voc_temp <= max_voc_limit and total_isc <= max_isc_limit:
         warnings.append(
-            f"ℹ️ **Configuración Totalmente Compatible (Victron MPPT Calculator):** El {reg_name} admite los "
+            f"ℹ️ **Configuración Totalmente Compatible (Victron MPPT Calculator):** El {spec['nombre']} admite los "
             f"**{total_pv_power_real/1000:.2f} kWp** en agrupación **{S_series}S{P_parallel}P** ({string_voc_temp:.1f}V Voc a -5ºC, {total_isc:.1f}A Isc). "
-            f"El regulador limitará la carga a {max_current}A (~{(max_current*58)/1000:.1f} kW en batería a 48V), maximizando el rendimiento en invierno de forma 100% segura."
+            f"El regulador limitará la carga a {spec['max_current']}A de forma 100% segura."
         )
         
     return dangers, warnings
-
-def auto_select_mppt(total_pv_power_real, total_panels, panel_voc, panel_vmp, panel_isc, panel_imp):
-    for ref, reg in REGULATOR_DB.items():
-        S, P, voc_stc, voc_cold, vmp_stc, isc_total, imp_total, candidates = get_mppt_electrical_grouping(
-            total_panels, panel_voc, panel_vmp, panel_isc, panel_imp, ref
-        )
-        has_valid_grouping = any(c['is_valid'] for c in candidates)
-        if not has_valid_grouping:
-            continue
-        
-        required_current = total_pv_power_real / 52.0
-        if reg['max_current'] >= required_current or total_pv_power_real <= reg['max_power'] * 1.30:
-            return ref
-            
-    return 'SCC145120512' 
 
 def get_mppt_electrical_grouping(total_panels, panel_voc, panel_vmp, panel_isc, panel_imp, regulator_ref, temp_factor=1.078):
     if total_panels <= 0 or panel_voc <= 0:
@@ -1038,6 +953,9 @@ with tab1:
             st.caption(f"🔧 **Inversor Seleccionado Manualmente:** `{INVERTER_DB[final_inverter_ref]['nombre']}`")
             
         inverter_specs = INVERTER_DB[final_inverter_ref]
+        if inverter_specs.get('va', 5000) < power_va:
+            st.warning(f"⚠️ **Inversor Infra-dimensionado:** La potencia continua del inversor (`{inverter_specs['nombre']}`) es de **{inverter_specs.get('va', 5000)} VA**, lo cual es inferior a la demanda simultánea requerida por la vivienda (**{power_va:.0f} VA**).")
+
 
     with col_reg:
         st.markdown("#### ☀️ Regulador de Carga Solar Victron SmartSolar")
