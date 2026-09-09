@@ -111,27 +111,143 @@ PANELS_DB = {
 }
 
 INVERTER_DB = {
-    "PMP482305010": {"nombre": "Victron MultiPlus-II 48/3000/35-32", "pvp": 624.0, "current": 100},
-    "PMP482505012": {"nombre": "Victron MultiPlus-II 48/5000/70-50", "pvp": 844.0, "current": 200},
-    "PMP482805000": {"nombre": "Victron MultiPlus-II 48/8000/110-100", "pvp": 1551.0, "current": 300},
-    "PMP483105000": {"nombre": "Victron MultiPlus-II 48/10000/140-100", "pvp": 1853.0, "current": 400},
-    "PMP483150000": {"nombre": "Victron MultiPlus-II 48/15000/200-100", "pvp": 2585.0, "current": 500}
+    "PMP482305010": {"nombre": "Victron MultiPlus-II 48/3000/35-32", "pvp": 624.0, "current": 100, "charger_current": 35},
+    "PMP482505012": {"nombre": "Victron MultiPlus-II 48/5000/70-50", "pvp": 844.0, "current": 200, "charger_current": 70},
+    "PMP482805000": {"nombre": "Victron MultiPlus-II 48/8000/110-100", "pvp": 1551.0, "current": 300, "charger_current": 110},
+    "PMP483105000": {"nombre": "Victron MultiPlus-II 48/10000/140-100", "pvp": 1853.0, "current": 400, "charger_current": 140},
+    "PMP483150000": {"nombre": "Victron MultiPlus-II 48/15000/200-100", "pvp": 2585.0, "current": 500, "charger_current": 200}
 }
 
 REGULATOR_DB = {
+    "SCC115035210": {
+        "nombre": "Victron SmartSolar MPPT 150/35 (12/24/48V, 35A)",
+        "pvp": 197.00,
+        "max_current": 35,
+        "max_voc": 150,
+        "max_power": 2000,
+        "max_isc": 40,
+        "min_voc": 0
+    },
+    "SCC115045212": {
+        "nombre": "Victron SmartSolar MPPT 150/45 (12/24/48V, 45A)",
+        "pvp": 233.00,
+        "max_current": 45,
+        "max_voc": 150,
+        "max_power": 2600,
+        "max_isc": 50,
+        "min_voc": 0
+    },
+    "SCC115060211": {
+        "nombre": "Victron SmartSolar MPPT 150/60-Tr (12/24/48V, 60A)",
+        "pvp": 375.00,
+        "max_current": 60,
+        "max_voc": 150,
+        "max_power": 3400,
+        "max_isc": 50,
+        "min_voc": 0
+    },
+    "SCC115070411": {
+        "nombre": "Victron SmartSolar MPPT 150/70-Tr VE.Can",
+        "pvp": 443.00,
+        "max_current": 70,
+        "max_voc": 150,
+        "max_power": 4000,
+        "max_isc": 50,
+        "min_voc": 0
+    },
+    "SCC115085411": {
+        "nombre": "Victron SmartSolar MPPT 150/85-Tr VE.Can",
+        "pvp": 483.00,
+        "max_current": 85,
+        "max_voc": 150,
+        "max_power": 4900,
+        "max_isc": 70,
+        "min_voc": 0
+    },
+    "SCC115110411": {
+        "nombre": "Victron SmartSolar MPPT 150/100-Tr VE.Can",
+        "pvp": 552.00,
+        "max_current": 100,
+        "max_voc": 150,
+        "max_power": 5800,
+        "max_isc": 70,
+        "min_voc": 0
+    },
+    "SCC125060221": {
+        "nombre": "Victron SmartSolar MPPT 250/60-Tr",
+        "pvp": 443.00,
+        "max_current": 60,
+        "max_voc": 250,
+        "max_power": 3400,
+        "max_isc": 50,
+        "min_voc": 0
+    },
+    "SCC125070421": {
+        "nombre": "Victron SmartSolar MPPT 250/70-Tr VE.Can",
+        "pvp": 545.00,
+        "max_current": 70,
+        "max_voc": 250,
+        "max_power": 4000,
+        "max_isc": 50,
+        "min_voc": 0
+    },
+    "SCC125085411": {
+        "nombre": "Victron SmartSolar MPPT 250/85-Tr VE.Can",
+        "pvp": 586.00,
+        "max_current": 85,
+        "max_voc": 250,
+        "max_power": 4900,
+        "max_isc": 70,
+        "min_voc": 0
+    },
     "SCC125110412": {
         "nombre": "Victron SmartSolar MPPT 250/100-Tr VE.Can",
         "pvp": 654.00,
+        "max_current": 100,
+        "max_voc": 250,
         "max_power": 5800,
-        "max_voc": 250
+        "max_isc": 70,
+        "min_voc": 0
     },
     "SCC145110512": {
         "nombre": "Victron SmartSolar MPPT RS 450/100-MC4 (2 seguidores de alta tensión)",
         "pvp": 1182.00,
+        "max_current": 100,
+        "max_voc": 450,
         "max_power": 11500,
-        "max_voc": 450
+        "max_isc": 50,
+        "min_voc": 120
+    },
+    "SCC145120512": {
+        "nombre": "Victron SmartSolar MPPT RS 450/200-MC4 (2 seguidores de alta tensión)",
+        "pvp": 2069.00,
+        "max_current": 200,
+        "max_voc": 450,
+        "max_power": 23000,
+        "max_isc": 50,
+        "min_voc": 120
     }
 }
+
+MEGA_FUSES = [
+    {"rating": 60, "ref": "CIP138060020", "name": "Victron MEGA-fuse 60A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 80, "ref": "CIP138080020", "name": "Victron MEGA-fuse 80A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 100, "ref": "CIP138100020", "name": "Victron MEGA-fuse 100A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 125, "ref": "CIP138125020", "name": "Victron MEGA-fuse 125A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 150, "ref": "CIP138150020", "name": "Victron MEGA-fuse 150A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 200, "ref": "CIP138200020", "name": "Victron MEGA-fuse 200A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 250, "ref": "CIP138250020", "name": "Victron MEGA-fuse 250A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 300, "ref": "CIP138300020", "name": "Victron MEGA-fuse 300A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 400, "ref": "CIP138400020", "name": "Victron MEGA-fuse 400A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 500, "ref": "CIP138500020", "name": "Victron MEGA-fuse 500A/80V para CC (Paquete de 5 uds)"}
+]
+
+def select_victron_fuse(target_current, apply_safety_factor=True):
+    req = target_current * 1.25 if apply_safety_factor else target_current
+    for f in MEGA_FUSES:
+        if f["rating"] >= req:
+            return f
+    return MEGA_FUSES[-1]
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -142,62 +258,75 @@ def check_regulator_safety(regulator_ref, total_pv_power_real, S_series, P_paral
     dangers = []
     warnings = []
     
+    reg_info = REGULATOR_DB.get(regulator_ref, REGULATOR_DB["SCC125110412"])
+    reg_name = reg_info["nombre"].split(" (")[0]
+    max_voc = float(reg_info.get("max_voc", 250.0))
+    max_isc = float(reg_info.get("max_isc", 70.0))
+    max_power = float(reg_info.get("max_power", 5800.0))
+    min_voc = float(reg_info.get("min_voc", 0.0))
+    max_current = reg_info.get("max_current", 100)
+    
     string_voc_stc = S_series * panel_voc
     string_voc_temp = string_voc_stc * temp_factor if S_series > 0 else 0
     total_isc = P_parallel * panel_isc
     
-    if regulator_ref == "SCC125110412":  # MPPT 250/100
-        if string_voc_temp > 250.0:
-            dangers.append(
-                f"💥 **Riesgo de Destrucción Irreversible:** La tensión Voc de string ({S_series} en serie) "
-                f"corregida por temperatura (-5 ºC en Girona) es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **250 V** "
-                f"del MPPT 250/100."
-            )
-        elif string_voc_temp > 230.0:
-            warnings.append(
-                f"⚠️ **Tensión de string elevada:** La tensión estimada a baja temperatura (-5 ºC) es de **{string_voc_temp:.1f} V**. "
-                f"Está muy cerca del límite máximo de 250 V del equipo."
-            )
-            
-        if total_isc > 70.0:
-            dangers.append(
-                f"🔥 **Sobrecorriente CC Crítica:** La corriente total de cortocircuito de los {P_parallel} strings en paralelo "
-                f"es de **{total_isc:.2f} A**, superando el límite máximo admitido de **70 A** del MPPT 250/100."
-            )
-            
-        if total_pv_power_real > 7500:
-            warnings.append(
-                f"⚠️ **Exceso de Potencia FV:** La potencia total del campo solar (**{total_pv_power_real/1000:.2f} kWp**) "
-                f"supera los **7.500 Wp** máximos recomendados para el MPPT 250/100."
-            )
-        elif 5800 < total_pv_power_real <= 7500 and string_voc_temp <= 250.0 and total_isc <= 70.0:
-            warnings.append(
-                f"ℹ️ **Configuración Totalmente Compatible (Victron MPPT Calculator):** El MPPT 250/100 admite los "
-                f"**{total_pv_power_real/1000:.2f} kWp** en agrupación **{S_series}S{P_parallel}P** ({string_voc_temp:.1f}V Voc a -5ºC, {total_isc:.1f}A Isc). "
-                f"El regulador limitará la carga a 100A (~5,8 kW en batería a 48V), maximizando el rendimiento en invierno de forma 100% segura."
-            )
-            
-    elif regulator_ref == "SCC145110512":  # MPPT RS 450/100
-        if string_voc_stc < 120.0 and total_pv_power_real > 0:
-            dangers.append(
-                f"🛑 **El Regulador NO Arrancará:** La tensión nominal solar (**{string_voc_stc:.1f} V**) es inferior "
-                f"al umbral mínimo de arranque de **120 VCC** del MPPT RS. "
-                f"Con cadenas de solo {S_series} paneles en serie, el regulador jamás se activará."
-            )
-            
-        if string_voc_temp > 450.0:
-            dangers.append(
-                f"💥 **Riesgo de Destrucción Irreversible:** La tensión Voc de string ({S_series} en serie) "
-                f"corregida por temperatura (-5 ºC) es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **450 V** del MPPT RS."
-            )
-            
-        if total_isc > 50.0:
-            dangers.append(
-                f"🔥 **Sobrecorriente CC Crítica:** La corriente total de cortocircuito ({P_parallel} ramas) "
-                f"es de **{total_isc:.2f} A**, superando el límite de **50 A** del MPPT RS."
-            )
-            
+    # 1. Minimum start voltage check
+    if min_voc > 0 and string_voc_stc < min_voc and total_pv_power_real > 0:
+        dangers.append(
+            f"🛑 **El Regulador NO Arrancará:** La tensión nominal solar (**{string_voc_stc:.1f} V**) es inferior "
+            f"al umbral mínimo de arranque de **{min_voc:.0f} VCC** del {reg_name}. "
+            f"Con cadenas de solo {S_series} paneles en serie, el regulador jamás se activará."
+        )
+        
+    # 2. Maximum Voc voltage check
+    if string_voc_temp > max_voc:
+        dangers.append(
+            f"💥 **Riesgo de Destrucción Irreversible:** La tensión Voc de string ({S_series} en serie) "
+            f"corregida por temperatura (-5 ºC en Girona) es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **{max_voc:.0f} V** "
+            f"del {reg_name}. ¡Conectar {S_series} paneles en serie destruirá el regulador y anulará la garantía!"
+        )
+    elif string_voc_temp > max_voc - 15.0 and max_voc <= 250.0:
+        warnings.append(
+            f"⚠️ **Tensión de string elevada:** La tensión estimada a baja temperatura (-5 ºC) es de **{string_voc_temp:.1f} V**. "
+            f"Está muy cerca del límite máximo de {max_voc:.0f} V del equipo."
+        )
+        
+    # 3. Maximum Isc short-circuit current check
+    if total_isc > max_isc:
+        dangers.append(
+            f"🔥 **Sobrecorriente CC Crítica:** La corriente total de cortocircuito de los {P_parallel} strings en paralelo "
+            f"es de **{total_isc:.2f} A**, superando el límite máximo admitido de **{max_isc:.0f} A** del {reg_name}. Existe riesgo de arco eléctrico."
+        )
+        
+    # 4. Power / Clipping check
+    if total_pv_power_real > max_power * 1.35:
+        warnings.append(
+            f"⚠️ **Exceso de Potencia FV:** La potencia total del campo solar (**{total_pv_power_real/1000:.2f} kWp**) "
+            f"supera holgadamente la capacidad recomendada ({max_power/1000:.1f} kWp) para el {reg_name}."
+        )
+    elif max_power < total_pv_power_real <= max_power * 1.35 and string_voc_temp <= max_voc and total_isc <= max_isc:
+        warnings.append(
+            f"ℹ️ **Configuración Totalmente Compatible (Victron MPPT Calculator):** El {reg_name} admite los "
+            f"**{total_pv_power_real/1000:.2f} kWp** en agrupación **{S_series}S{P_parallel}P** ({string_voc_temp:.1f}V Voc a -5ºC, {total_isc:.1f}A Isc). "
+            f"El regulador limitará la carga a {max_current}A (~{(max_current*58)/1000:.1f} kW en batería a 48V), maximizando el rendimiento en invierno de forma 100% segura."
+        )
+        
     return dangers, warnings
+
+def auto_select_mppt(total_pv_power_real, total_panels, panel_voc, panel_vmp, panel_isc, panel_imp):
+    for ref, reg in REGULATOR_DB.items():
+        S, P, voc_stc, voc_cold, vmp_stc, isc_total, imp_total, candidates = get_mppt_electrical_grouping(
+            total_panels, panel_voc, panel_vmp, panel_isc, panel_imp, ref
+        )
+        has_valid_grouping = any(c['is_valid'] for c in candidates)
+        if not has_valid_grouping:
+            continue
+        
+        required_current = total_pv_power_real / 52.0
+        if reg['max_current'] >= required_current or total_pv_power_real <= reg['max_power'] * 1.30:
+            return ref
+            
+    return 'SCC145120512' 
 
 def get_mppt_electrical_grouping(total_panels, panel_voc, panel_vmp, panel_isc, panel_imp, regulator_ref, temp_factor=1.078):
     if total_panels <= 0 or panel_voc <= 0:
@@ -976,6 +1105,33 @@ with tab1:
         with col_e4:
             st.metric(f"Corriente Isc Campo ({P_parallel}P)", f"{total_isc_ui:.2f} A", f"Imp Trabajo: {total_imp_ui:.2f} A")
 
+    with st.expander("🛡️ CÁLCULO Y PROTECCIÓN DE FUSIBLES CC (NOVELEC STANDARD)", expanded=True):
+        col_f1, col_f2, col_f3 = st.columns(3)
+        with col_f1:
+            st.metric(
+                "Fusible Regulador MPPT",
+                f"{mppt_fuse_spec['rating']} A",
+                f"I_out MPPT: {mppt_charge_current} A ({mppt_fuse_spec['ref']})"
+            )
+        with col_f2:
+            st.metric(
+                "Fusible Inversor MultiPlus-II",
+                f"{inverter_fuse_spec['rating']} A",
+                f"I_max Descarga: {inverter_max_current} A ({inverter_fuse_spec['ref']})"
+            )
+        with col_f3:
+            st.metric(
+                "Fusible Bancada Baterías",
+                f"{bat_fuse_spec['rating']} A",
+                f"Carga Comb: {total_combined_charge_current} A ({mppt_charge_current}A MPPT + {inverter_charge_current}A AC)"
+            )
+        st.caption(
+            f"ℹ️ **Criterio de Cálculo de Fusibles:** "
+            f"1) **MPPT:** Carga de salida de {mppt_charge_current}A x factor 1.25 -> Fusible de {mppt_fuse_spec['rating']}A. "
+            f"2) **Inversor:** Descarga máx de {inverter_max_current}A / Carga AC de {inverter_charge_current}A -> Fusible de {inverter_fuse_spec['rating']}A. "
+            f"3) **Baterías / Lynx:** Corriente combinada de carga máxima ({mppt_charge_current}A MPPT + {inverter_charge_current}A Inversor Cargador = {total_combined_charge_current}A) frente a descarga pico ({inverter_max_current}A) -> Fusible de {bat_fuse_spec['rating']}A."
+        )
+
 
     # 3. Gave Box selection
     if regulator_ref == "SCC125110412":
@@ -987,22 +1143,20 @@ with tab1:
         gave_name = "Caja Solartec 2 strings 1000V (Protección sobretensiones Tipo II para MPPT RS)"
         gave_pvp = 288.21
 
-    # 4. Battery unweighted max calculations
-    battery_current = max(100, inverter_specs["current"])
+    # 4. Cálculo de Fusibles de Potencia CC (Novelec Standard)
+    mppt_charge_current = reg_specs["max_current"]
+    inverter_max_current = inverter_specs["current"]
+    inverter_charge_current = inverter_specs["charger_current"]
     
-    # Fuse Sizing for batteries based on max operational currents
-    if battery_current <= 125:
-        bat_fuse_ref = "CIP138125020"
-        bat_fuse_name = "Victron MEGA-fuse 125A/80V para CC (Paquete de 5 uds)"
-    elif battery_current <= 200:
-        bat_fuse_ref = "CIP138200020"
-        bat_fuse_name = "Victron MEGA-fuse 200A/80V para CC (Paquete de 5 uds)"
-    elif battery_current <= 300:
-        bat_fuse_ref = "CIP138300020"
-        bat_fuse_name = "Victron MEGA-fuse 300A/80V para CC (Paquete de 5 uds)"
-    else:
-        bat_fuse_ref = "CIP138500020"
-        bat_fuse_name = "Victron MEGA-fuse 500A/80V para CC (Paquete de 5 uds)"
+    mppt_fuse_spec = select_victron_fuse(mppt_charge_current, apply_safety_factor=True)
+    inverter_fuse_spec = select_victron_fuse(inverter_max_current, apply_safety_factor=False)
+    
+    total_combined_charge_current = mppt_charge_current + inverter_charge_current
+    max_battery_circuit_current = max(total_combined_charge_current, inverter_max_current)
+    bat_fuse_spec = select_victron_fuse(max_battery_circuit_current, apply_safety_factor=False)
+    
+    bat_fuse_ref = bat_fuse_spec["ref"]
+    bat_fuse_name = bat_fuse_spec["name"]
 
     # Contrucción del Presupuesto
     bom_items = []
@@ -1350,11 +1504,11 @@ with tab1:
         "Is_Victron": False
     })
     
-    # Fusibles MEGA desglosados unitariamente (Fraccionados de caja de 5 uds a 7,60€ PVP)
+    # Fusibles MEGA desglosados unitariamente según corrientes calculadas
     bom_items.append({
         "Categoría": "Fusibles de Potencia",
-        "Referencia": "CIP138125020",
-        "Descripción": "Victron MEGA-fuse 125A/80V para CC (Paquete de 5 uds)",
+        "Referencia": mppt_fuse_spec["ref"],
+        "Descripción": f"Victron MEGA-fuse {mppt_fuse_spec['rating']}A/80V para salida MPPT ({mppt_charge_current}A nominal)",
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 7.60,
@@ -1363,8 +1517,8 @@ with tab1:
     })
     bom_items.append({
         "Categoría": "Fusibles de Potencia",
-        "Referencia": bat_fuse_ref,
-        "Descripción": bat_fuse_name,
+        "Referencia": bat_fuse_spec["ref"],
+        "Descripción": f"Victron MEGA-fuse {bat_fuse_spec['rating']}A/80V para bancada Batería TBB (Carga Comb: {total_combined_charge_current}A [{mppt_charge_current}A MPPT + {inverter_charge_current}A AC])",
         "Cantidad": 1 if batteries_qty > 0 else 0,
         "Unidad": "uds",
         "PVP Tarifa (€)": 7.60,
@@ -1373,8 +1527,8 @@ with tab1:
     })
     bom_items.append({
         "Categoría": "Fusibles de Potencia",
-        "Referencia": "CIP138200020",
-        "Descripción": "Victron MEGA-fuse 200A/80V para CC (Paquete de 5 uds)",
+        "Referencia": inverter_fuse_spec["ref"],
+        "Descripción": f"Victron MEGA-fuse {inverter_fuse_spec['rating']}A/80V para Inversor MultiPlus-II ({inverter_max_current}A máx)",
         "Cantidad": 1,
         "Unidad": "uds",
         "PVP Tarifa (€)": 7.60,
