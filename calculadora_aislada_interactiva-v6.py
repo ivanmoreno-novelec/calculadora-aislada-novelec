@@ -105,9 +105,9 @@ st.markdown("---")
 
 # Inicialización de bases de datos
 PANELS_DB = {
-    "LONGi LR7-54HVB-495M (495Wp)": {"p_pico": 495, "voc": 39.5, "isc": 14.1, "ref": "LR7-54HVB-495M", "desc": "Panel solar LONGi HPBC 2.0 Full-Black"},
-    "LONGi LR7-60HVH-545M (545Wp)": {"p_pico": 545, "voc": 44.98, "isc": 15.35, "ref": "LR7-60HVH-545M", "desc": "Panel solar LONGi alta eficiencia 24.8% BC"},
-    "LONGi LR7-60HVH-560M (560Wp)": {"p_pico": 560, "voc": 45.4, "isc": 15.6, "ref": "LR7-60HVH-560M", "desc": "Panel solar LONGi alta eficiencia 24.8% BC"}
+    "LONGi LR7-54HVB-495M (495Wp)": {"p_pico": 495, "voc": 39.5, "vmp": 32.9, "isc": 14.1, "imp": 15.05, "ref": "LR7-54HVB-495M", "desc": "Panel solar LONGi HPBC 2.0 Full-Black"},
+    "LONGi LR7-60HVH-545M (545Wp)": {"p_pico": 545, "voc": 44.98, "vmp": 37.88, "isc": 15.35, "imp": 14.39, "ref": "LR7-60HVH-545M", "desc": "Panel solar LONGi alta eficiencia 24.8% BC"},
+    "LONGi LR7-60HVH-560M (560Wp)": {"p_pico": 560, "voc": 45.4, "vmp": 38.2, "isc": 15.6, "imp": 14.66, "ref": "LR7-60HVH-560M", "desc": "Panel solar LONGi alta eficiencia 24.8% BC"}
 }
 
 INVERTER_DB = {
@@ -142,56 +142,60 @@ def check_regulator_safety(regulator_ref, total_pv_power_real, panels_per_row, p
     dangers = []
     warnings = []
     
-    # Factor de corrección de tensión por bajas temperaturas en invierno Girona (-5 ºC) -> 1.12
-    temp_factor = 1.12
+    # Factor de corrección de tensión por bajas temperaturas en invierno Girona (-5 ºC) -> 1.078 (Standard Victron MPPT Calculator Coeff -0.26%/ºC)
+    temp_factor = 1.078
     string_voc_temp = panels_per_row * panel_voc * temp_factor if panels_per_row > 0 else 0
+    string_voc_nominal = panels_per_row * panel_voc
+    total_isc = num_rows * panel_isc
     
     if regulator_ref == "SCC125110412":  # MPPT 250/100
         # 1. Límite de tensión
-        if string_voc_temp > 250:
+        if string_voc_temp > 250.0:
             dangers.append(
                 f"💥 **Riesgo de Destrucción Irreversible:** La tensión Voc de string corregida por temperatura "
                 f"para el invierno de Girona (-5 ºC) es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **250 V** "
                 f"del MPPT 250/100. ¡Conectar {panels_per_row} paneles en serie destruirá el regulador y anulará la garantía!"
             )
-        elif string_voc_temp > 220:
+        elif string_voc_temp > 230.0:
             warnings.append(
                 f"⚠️ **Tensión de string elevada:** La tensión estimada a baja temperatura es de **{string_voc_temp:.1f} V**. "
-                f"Está extremadamente cerca del límite máximo de 250 V del equipo. Se recomienda no aumentar la cantidad en serie."
+                f"Está cerca del límite máximo de 250 V del equipo."
             )
             
-        # 2. Límite de potencia
-        if total_pv_power_real > 5800:
-            warnings.append(
-                f"📉 **Saturación de Carga (Clipping Severo):** La potencia total del campo solar (**{total_pv_power_real/1000:.2f} kWp**) "
-                f"supera el límite seguro de diseño de **5.800 W** para el MPPT 250/100 a 48V. El regulador limitará la inyección a 100A "
-                f"y desaprovechará la potencia excedente, además de incrementar la temperatura interna de la electrónica."
-            )
-            
-        # 3. Límite de corriente de cortocircuito (Isc)
-        total_isc = num_rows * panel_isc
-        if total_isc > 70:
+        # 2. Límite de corriente de cortocircuito (Isc)
+        if total_isc > 70.0:
             dangers.append(
                 f"🔥 **Sobrecorriente CC Crítica:** La corriente total de cortocircuito de los {num_rows} strings en paralelo "
-                f"es de **{total_isc:.2f} A**, superando el límite máximo admitido de **70 A** del MPPT 250/100. Existe riesgo de arco eléctrico y fuego."
+                f"es de **{total_isc:.2f} A**, superando el límite máximo admitido de **70 A** del MPPT 250/100. Existe riesgo de arco eléctrico."
+            )
+            
+        # 3. Límite de potencia y validación Victron MPPT Calculator
+        if total_pv_power_real > 7500:
+            warnings.append(
+                f"⚠️ **Exceso de Potencia FV:** La potencia total del campo solar (**{total_pv_power_real/1000:.2f} kWp**) "
+                f"supera los **7.500 Wp** máximos recomendados para el MPPT 250/100."
+            )
+        elif 5800 < total_pv_power_real <= 7500 and string_voc_temp <= 250.0 and total_isc <= 70.0:
+            warnings.append(
+                f"ℹ️ **Configuración Totalmente Compatible (Victron MPPT Calculator):** El MPPT 250/100 admite los "
+                f"**{total_pv_power_real/1000:.2f} kWp** en agrupación **{panels_per_row}S{num_rows}P** ({string_voc_temp:.1f}V Voc a -5ºC, {total_isc:.1f}A Isc). "
+                f"El regulador limitará la carga a 100A (~5,8 kW en batería a 48V), maximizando el rendimiento en invierno de forma 100% segura."
             )
             
     elif regulator_ref == "SCC145110512":  # MPPT RS 450/100
         # 1. Tensión de arranque mínima (120V)
-        string_voc_nominal = panels_per_row * panel_voc
-        if string_voc_nominal < 120 and total_pv_power_real > 0:
+        if string_voc_nominal < 120.0 and total_pv_power_real > 0:
             dangers.append(
                 f"🛑 **El Regulador NO Arrancará:** La tensión nominal solar (**{string_voc_nominal:.1f} V**) es inferior "
                 f"al umbral mínimo de arranque de **120 VCC** del regulador de alta tensión MPPT RS. "
-                f"Con cadenas de solo {panels_per_row} paneles en serie, el regulador jamás se activará y el sistema no funcionará."
+                f"Con cadenas de solo {panels_per_row} paneles en serie, el regulador jamás se activará."
             )
             
         # 2. Límite de tensión absoluta (450V)
-        if string_voc_temp > 450:
+        if string_voc_temp > 450.0:
             dangers.append(
                 f"💥 **Riesgo de Destrucción Irreversible:** La tensión Voc corregida por temperatura (-5 ºC) "
-                f"es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **450 V** del MPPT RS. "
-                f"¡Conectar {panels_per_row} paneles en serie fundirá el regulador!"
+                f"es de **{string_voc_temp:.1f} V**, lo que supera el límite absoluto de **450 V** del MPPT RS."
             )
             
     return dangers, warnings
@@ -812,6 +816,25 @@ with tab1:
         else:
             st.warning(f"⚠️ **Cobertura Solar Parcial ({solar_coverage_pct:.0f}%):** La generación solar estimada en invierno (**{daily_pv_generation_net_kwh:.2f} kWh/día**) es inferior a la demanda diaria (**{daily_consumption_kwh:.2f} kWh/día**). Déficit diario de **{daily_consumption_kwh - daily_pv_generation_net_kwh:.2f} kWh/día**.")
 
+    # ── PARÁMETROS ELÉCTRICOS DEL CAMPO SOLAR (VICTRON MPPT CALCULATOR) ──
+    temp_factor_ui = 1.078
+    string_voc_stc_ui = panels_per_row * panel_specs["voc"]
+    string_voc_cold_ui = string_voc_stc_ui * temp_factor_ui
+    string_vmp_stc_ui = panels_per_row * panel_specs["vmp"]
+    total_isc_ui = num_rows * panel_specs["isc"]
+    total_imp_ui = num_rows * panel_specs["imp"]
+
+    with st.expander("⚡ PARÁMETROS ELÉCTRICOS DEL CAMPO SOLAR (Victron MPPT Calculator)", expanded=True):
+        col_e1, col_e2, col_e3, col_e4 = st.columns(4)
+        with col_e1:
+            st.metric("Agrupación Eléctrica", f"{panels_per_row}S{num_rows}P", f"{num_rows} series de {panels_per_row} paneles")
+        with col_e2:
+            st.metric("Tensión Voc (-5ºC / STC)", f"{string_voc_cold_ui:.1f} V", f"Nominal STC: {string_voc_stc_ui:.1f} V")
+        with col_e3:
+            st.metric("Tensión Vmp Trabajo", f"{string_vmp_stc_ui:.1f} V", f"{panels_per_row}x {panel_specs['vmp']}V")
+        with col_e4:
+            st.metric("Corriente Isc Campo ({num_rows}P)", f"{total_isc_ui:.2f} A", f"Imp Trabajo: {total_imp_ui:.2f} A")
+
     # ── CÓMPUTO GLOBAL DEL LISTADO DE MATERIALES (BOM) ──
     auto_inverter_ref = "PMP482305010"
     if power_va < 3000:
@@ -835,7 +858,14 @@ with tab1:
     inverter_specs = INVERTER_DB[final_inverter_ref]
     
     # 2. Regulator Sizing & Manual Override
-    auto_regulator_ref = "SCC125110412" if total_pv_power_real <= 5800 else "SCC145110512"
+    temp_factor_calc = 1.078
+    string_voc_cold_calc = panels_per_row * panel_specs["voc"] * temp_factor_calc if panels_per_row > 0 else 0
+    total_isc_calc = num_rows * panel_specs["isc"]
+    
+    if string_voc_cold_calc <= 250.0 and total_isc_calc <= 70.0 and total_pv_power_real <= 7500:
+        auto_regulator_ref = "SCC125110412"
+    else:
+        auto_regulator_ref = "SCC145110512"
     manual_regulator_choice = st.session_state.get('manual_regulator', "Automático (Recomendado)")
     
     if manual_regulator_choice == "Automático (Recomendado)":
@@ -888,7 +918,14 @@ with tab1:
     inverter_specs = INVERTER_DB[final_inverter_ref]
     
     # 2. Regulator Sizing & Manual Override
-    auto_regulator_ref = "SCC125110412" if total_pv_power_real <= 5800 else "SCC145110512"
+    temp_factor_calc = 1.078
+    string_voc_cold_calc = panels_per_row * panel_specs["voc"] * temp_factor_calc if panels_per_row > 0 else 0
+    total_isc_calc = num_rows * panel_specs["isc"]
+    
+    if string_voc_cold_calc <= 250.0 and total_isc_calc <= 70.0 and total_pv_power_real <= 7500:
+        auto_regulator_ref = "SCC125110412"
+    else:
+        auto_regulator_ref = "SCC145110512"
     manual_regulator_choice = st.session_state.get('manual_regulator', "Automático (Recomendado)")
     
     if manual_regulator_choice == "Automático (Recomendado)":
