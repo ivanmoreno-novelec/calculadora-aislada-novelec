@@ -176,6 +176,27 @@ REGULATOR_DB = {
     "SCC145120512": {"nombre": "SmartSolar MPPT RS 450/200-MC4 de alta tensión", "pvp": 2069.0, "max_current": 200, "max_voc": 450, "max_power": 11600, "max_isc": 50, "min_voc": 120, "supports_48v": True}
 }
 
+
+MEGA_FUSES = [
+    {"rating": 60, "ref": "CIP138060020", "name": "Victron MEGA-fuse 60A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 80, "ref": "CIP138080020", "name": "Victron MEGA-fuse 80A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 100, "ref": "CIP138100020", "name": "Victron MEGA-fuse 100A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 125, "ref": "CIP138125020", "name": "Victron MEGA-fuse 125A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 150, "ref": "CIP138150020", "name": "Victron MEGA-fuse 150A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 200, "ref": "CIP138200020", "name": "Victron MEGA-fuse 200A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 250, "ref": "CIP138250020", "name": "Victron MEGA-fuse 250A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 300, "ref": "CIP138300020", "name": "Victron MEGA-fuse 300A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 400, "ref": "CIP138400020", "name": "Victron MEGA-fuse 400A/80V para CC (Paquete de 5 uds)"},
+    {"rating": 500, "ref": "CIP138500020", "name": "Victron MEGA-fuse 500A/80V para CC (Paquete de 5 uds)"}
+]
+
+def select_victron_fuse(target_current, apply_safety_factor=True):
+    req = target_current * 1.25 if apply_safety_factor else target_current
+    for f in MEGA_FUSES:
+        if f["rating"] >= req:
+            return f
+    return MEGA_FUSES[-1]
+
 def check_regulator_safety(regulator_ref, total_pv_power_real, S_series, P_parallel, panel_voc, panel_isc, temp_factor=1.078):
     dangers = []
     warnings = []
