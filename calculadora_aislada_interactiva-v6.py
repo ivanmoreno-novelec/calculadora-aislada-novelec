@@ -626,8 +626,8 @@ with st.expander("⚙️ CONFIGURACIÓN DEL PROYECTO, TEJADO Y PARÁMETROS DE DI
     with col_c3:
         tilt = st.selectbox(
             "Inclinación",
-            ["5º", "7º", "10º", "15º", "30º", "45º"],
-            index=3,
+            ["0º", "5º", "7º", "10º", "15º", "30º", "45º"],
+            index=4,
             key="config_tilt",
             disabled=(roof_type == "Plana")
         )
@@ -648,6 +648,7 @@ with st.expander("⚙️ CONFIGURACIÓN DEL PROYECTO, TEJADO Y PARÁMETROS DE DI
         st.markdown("<div style='padding-top:25px;'></div>", unsafe_allow_html=True)
         # Matriz HSP d'hivern (Catalunya)
         hsp_matrix = {
+            "0º": {"Sur": 2.0, "Este": 2.0, "Oeste": 2.0},
             "5º": {"Sur": 2.0, "Este": 1.9, "Oeste": 1.9},
             "7º": {"Sur": 2.0, "Este": 1.8, "Oeste": 1.8},
             "10º": {"Sur": 2.0, "Este": 1.7, "Oeste": 1.7},
