@@ -613,7 +613,7 @@ with st.expander("⚙️ CONFIGURACIÓN DEL PROYECTO, TEJADO Y PARÁMETROS DE DI
     with col_c1:
         roof_type = st.selectbox(
             "Tipo de Cubierta",
-            ["Inclinada Teja", "Inclinada Chapa (Sándwich)", "Plana"],
+            ["Inclinada Teja", "Inclinada Chapa (Sándwich)", "Plana", "Sin Estructura"],
             key="config_roof_type"
         )
     with col_c2:
@@ -1212,6 +1212,9 @@ with tab1:
             "Descuento": 0.0,
             "Is_Victron": False
         })
+    elif roof_type == "Sin Estructura":
+        # Sin estructura de soporte presupuestada
+        pass
     else:
         # Cómputo geométrico avanzado para inclinada (Teja o Chapa)
         ref_anclaje = "S01-250-CL-C" if roof_type == "Inclinada Teja" else "S04-ZN"
