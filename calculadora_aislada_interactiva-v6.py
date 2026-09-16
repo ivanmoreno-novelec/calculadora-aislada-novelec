@@ -459,25 +459,24 @@ def generate_system_sketch(total_panels_configured, total_pv_power_real, batteri
     is_riio = "RiiO" in str(system_solution) or "TBB" in str(system_solution)
 
     if is_riio:
-        draw_block(0.0, 2.0, 2.3, 0.9, "GENERACION SOL", f"{total_panels_configured} Placas LONGi\n({total_pv_power_real/1000:.2f} kWp)", "#0284c7")
-        draw_block(2.7, 2.0, 2.3, 0.9, "PROTECCIONES CC", "Caja Gave Solartec\n(Sobretensiones TII)", "#475569")
+        draw_block(0.2, 1.8, 2.4, 1.0, "GENERACION SOL", f"{total_panels_configured} Placas LONGi\n({total_pv_power_real/1000:.2f} kWp)", "#0284c7")
+        draw_block(3.2, 1.8, 2.4, 1.0, "PROTECCIONES CC", "Caja Gave Solartec\n(Sobretensiones TII)", "#475569")
         
         riio_label = str(inverter_name).replace("TBB ", "").split(" (")[0]
-        draw_block(5.4, 1.8, 2.7, 1.3, "TODO EN UNO TBB", f"{riio_label}\n(Inversor + MPPT + WiFi)", "#004b7c")
-        draw_block(9.0, 0.2, 2.3, 0.9, "DISTRIBUCION CC", "Victron Lynx Power In\n(CC Centralizado)", "#334155")
-        draw_block(5.4, 0.2, 2.7, 0.9, "ACUMULACION", f"{batteries_qty} Baterias TBB ES100II\n({batteries_qty*5.04:.1f} kWh)", "#002f54")
-        draw_block(13.2, 2.0, 1.8, 0.9, "VIVIENDA", "Consumos\nCA 230V", "#16a34a")
+        draw_block(6.2, 1.5, 3.2, 1.4, "TODO EN UNO TBB", f"{riio_label}\n(Inversor + MPPT + WiFi)", "#004b7c")
+        draw_block(6.2, 0.1, 3.2, 1.0, "ACUMULACION", f"{batteries_qty} Baterias TBB ES100II\n({batteries_qty*5.04:.1f} kWh)", "#002f54")
+        draw_block(12.2, 1.8, 2.2, 1.0, "VIVIENDA", "Consumos\nCA 230V", "#16a34a")
         
         if has_generator == "Sí":
-            draw_block(9.0, 2.8, 2.3, 0.7, "G. ELECTROGENO", "Grupo Auxiliar\n(Entrada AC-In)", "#dc2626")
+            draw_block(6.2, 3.1, 3.2, 0.6, "G. ELECTROGENO", "Grupo Auxiliar\n(Entrada AC-In)", "#dc2626")
 
-        draw_arrow(2.3, 2.45, 2.7, 2.45, "CC")
-        draw_arrow(5.0, 2.45, 5.4, 2.45, "CC")
-        draw_arrow(6.75, 0.2, 6.75, 1.8, "48V")
-        draw_arrow(8.1, 2.45, 13.2, 2.45, "230V CA")
+        draw_arrow(2.6, 2.3, 3.2, 2.3, "CC")
+        draw_arrow(5.6, 2.3, 6.2, 2.3, "CC")
+        draw_arrow(7.8, 1.1, 7.8, 1.5, "48V CC")
+        draw_arrow(9.4, 2.3, 12.2, 2.3, "230V CA")
         
         if has_generator == "Sí":
-            draw_arrow(10.15, 2.8, 8.1, 2.8, "AC-In")
+            draw_arrow(7.8, 3.1, 7.8, 2.9, "AC-In")
     else:
         mppt_short = clean_mppt_label(regulator_ref)
         inv_short = clean_inverter_label(inverter_name)
@@ -1537,16 +1536,17 @@ with tab1:
         })
 
     # Distribución y protecciones
-    bom_items.append({
-        "Categoría": "Protección y Distribución",
-        "Referencia": "LYN020102010",
-        "Descripción": "Victron Lynx Power In (M10) - Embarrado CC centralizado",
-        "Cantidad": 1,
-        "Unidad": "uds",
-        "PVP Tarifa (€)": 150.0,
-        "Descuento": 0.0,
-        "Is_Victron": True
-    })
+    if not is_riio:
+        bom_items.append({
+            "Categoría": "Protección y Distribución",
+            "Referencia": "LYN020102010",
+            "Descripción": "Victron Lynx Power In (M10) - Embarrado CC centralizado",
+            "Cantidad": 1,
+            "Unidad": "uds",
+            "PVP Tarifa (€)": 150.0,
+            "Descuento": 0.0,
+            "Is_Victron": True
+        })
     bom_items.append({
         "Categoría": "Protección y Distribución",
         "Referencia": gave_ref,
