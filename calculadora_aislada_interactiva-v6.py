@@ -543,7 +543,7 @@ class NovelecPDF(FPDF):
         self.set_text_color(100, 116, 139)
         self.cell(0, 10, f"Pagina {self.page_no()} | Propuesta Fotovoltaica Novelec", align="C")
 
-def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max, regulator_ref, regulator_name, inverter_ref, inverter_name, system_solution):
+def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max, regulator_ref, regulator_name, inverter_ref, inverter_name, system_solution="Victron Energy"):
     pdf = NovelecPDF()
     pdf.add_page()
     
@@ -1733,7 +1733,8 @@ with tab1:
             regulator_ref=regulator_ref,
             regulator_name=regulator_name,
             inverter_ref=final_inverter_ref,
-            inverter_name=inverter_specs["nombre"]
+            inverter_name=inverter_specs["nombre"],
+            system_solution=system_solution
         )
         
         col_down1, col_down2 = st.columns(2)
