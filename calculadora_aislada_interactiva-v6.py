@@ -146,6 +146,75 @@ INVERTER_DB = {
     "QUA483150000": {"nombre": "Victron Quattro 48/15000/200-100/100", "pvp": 3133.0, "va": 15000, "current": 500, "charger_current": 200}
 }
 
+
+TBB_RIIO_DB = {
+    "Riio Sun II 2KVA-S": {
+        "nombre": "TBB RiiO Sun II 2kVA-S 48V (2000VA, MPPT 250/60 60A)",
+        "pvp": 565.0,
+        "va": 2000,
+        "current": 60,
+        "charger_current": 20,
+        "max_current": 60,
+        "max_voc": 250,
+        "max_power": 3480,
+        "max_isc": 70,
+        "min_voc": 0,
+        "ref": "Riio Sun II 2KVA-S"
+    },
+    "Riio Sun II 3KVA-S": {
+        "nombre": "TBB RiiO Sun II 3kVA-S 48V (3000VA, MPPT 250/60 60A)",
+        "pvp": 650.0,
+        "va": 3000,
+        "current": 100,
+        "charger_current": 35,
+        "max_current": 60,
+        "max_voc": 250,
+        "max_power": 3480,
+        "max_isc": 70,
+        "min_voc": 0,
+        "ref": "Riio Sun II 3KVA-S"
+    },
+    "Riio Sun II 5KVA-S": {
+        "nombre": "TBB RiiO Sun II 5kVA-S 48V (5000VA, MPPT 250/100 100A)",
+        "pvp": 995.0,
+        "va": 5000,
+        "current": 200,
+        "charger_current": 60,
+        "max_current": 100,
+        "max_voc": 250,
+        "max_power": 5800,
+        "max_isc": 70,
+        "min_voc": 0,
+        "ref": "Riio Sun II 5KVA-S"
+    },
+    "Riio Sun II 6KVA-S": {
+        "nombre": "TBB RiiO Sun II 6kVA-S 48V (6000VA, MPPT 250/100 100A)",
+        "pvp": 1100.0,
+        "va": 6000,
+        "current": 250,
+        "charger_current": 70,
+        "max_current": 100,
+        "max_voc": 250,
+        "max_power": 5800,
+        "max_isc": 70,
+        "min_voc": 0,
+        "ref": "Riio Sun II 6KVA-S"
+    },
+    "Riio Sun II 8KVA-S": {
+        "nombre": "TBB RiiO Sun II 8kVA-S 48V (8000VA, MPPT 250/100 100A)",
+        "pvp": 1250.0,
+        "va": 8000,
+        "current": 300,
+        "charger_current": 90,
+        "max_current": 100,
+        "max_voc": 250,
+        "max_power": 5800,
+        "max_isc": 70,
+        "min_voc": 0,
+        "ref": "Riio Sun II 8KVA-S"
+    }
+}
+
 REGULATOR_DB = {
     "SCC075010060R": {"nombre": "SmartSolar MPPT 75/10 (12/24V, 10A)", "pvp": 63.0, "max_current": 10, "max_voc": 75, "max_power": 580, "max_isc": 20, "min_voc": 0, "supports_48v": False},
     "SCC075015060R": {"nombre": "SmartSolar MPPT 75/15 (12/24V, 15A)", "pvp": 68.0, "max_current": 15, "max_voc": 75, "max_power": 870, "max_isc": 20, "min_voc": 0, "supports_48v": False},
@@ -202,10 +271,12 @@ def check_regulator_safety(regulator_ref, total_pv_power_real, S_series, P_paral
     dangers = []
     warnings = []
     
-    if regulator_ref not in REGULATOR_DB:
+    if regulator_ref in REGULATOR_DB:
+        spec = REGULATOR_DB[regulator_ref]
+    elif regulator_ref in TBB_RIIO_DB:
+        spec = TBB_RIIO_DB[regulator_ref]
+    else:
         return dangers, warnings
-        
-    spec = REGULATOR_DB[regulator_ref]
     
     # 1. Tensión de Batería 48V
     if not spec.get('supports_48v', True):
@@ -353,6 +424,8 @@ def clean_inverter_label(name):
 def clean_mppt_label(reg_input):
     if reg_input in REGULATOR_DB:
         s = REGULATOR_DB[reg_input]["nombre"]
+    elif reg_input in TBB_RIIO_DB:
+        s = f"MPPT 250/{TBB_RIIO_DB[reg_input]['max_current']} (RiiO II)"
     else:
         s = str(reg_input)
     s = s.replace("Victron ", "").replace(" de alta tensión", "")
@@ -362,7 +435,7 @@ def clean_mppt_label(reg_input):
     s = re.sub(r'\s*VE\.Can\b', '', s)
     return s.strip()
 
-def generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_info, inverter_name, filename):
+def generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, inverter_name, system_solution, filename):
     fig, ax = plt.subplots(figsize=(11, 4.8), dpi=300)
     ax.set_xlim(-0.4, 15.6)
     ax.set_ylim(-0.4, 3.8)
@@ -373,55 +446,63 @@ def generate_system_sketch(total_panels_configured, total_pv_power_real, batteri
         ax.add_patch(p)
         ax.text(x + w/2, y + h*0.70, title, fontsize=7.5, fontweight='bold', color=text_color, ha='center', va='center')
         ax.text(x + w/2, y + h*0.32, subtitle, fontsize=6.0, color=text_color, ha='center', va='center', multialignment='center')
-        
-    # 1. Panels Block
-    draw_block(0.0, 2.0, 2.3, 0.9, "GENERACION SOL", f"{total_panels_configured} Placas LONGi\n({total_pv_power_real/1000:.2f} kWp)", "#0284c7")
-    
-    # 2. Gave CC Box Block
-    draw_block(2.7, 2.0, 2.3, 0.9, "PROTECCIONES CC", "Caja Gave Solartec\n(Sobretensiones TII)", "#475569")
-    
-    # 3. MPPT Regulator Block
-    mppt_short = clean_mppt_label(regulator_info)
-    draw_block(5.4, 2.0, 2.3, 0.9, "REGULADOR MPPT", f"{mppt_short}\n(Carga Inteligente)", "#ea580c")
-    
-    # 4. Lynx Power In CC Busbar
-    draw_block(8.1, 1.0, 2.3, 0.9, "DISTRIBUCION CC", "Victron Lynx Power In\n(CC Centralizado)", "#334155")
-    
-    # 5. Batteries Block
-    draw_block(5.4, 0.0, 2.3, 0.9, "ACUMULACION", f"{batteries_qty} Baterias TBB\n({batteries_qty*5.04:.1f} kWh)", "#002f54")
-    
-    # 6. Inverter Block
-    inv_short = clean_inverter_label(inverter_name)
-    draw_block(10.8, 1.0, 2.3, 0.9, "INVERSOR / CARG.", f"Victron {inv_short}\n(48V a 230V CA)", "#1e3a8a")
-    
-    # 7. AC Loads Block
-    draw_block(13.5, 1.0, 1.5, 0.9, "VIVIENDA", "Consumos\nCA 230V", "#16a34a")
-    
-    # 8. Generator Block (Optional)
-    if has_generator == "Sí":
-        draw_block(10.8, 2.7, 2.3, 0.7, "G. ELECTROGENO", "Grupo Auxiliar\n(Entrada AC-In)", "#dc2626")
-        
-    # Draw Arrows with custom markers
+
     def draw_arrow(x1, y1, x2, y2, label=""):
         ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
                     arrowprops=dict(arrowstyle="-|>", lw=1.2, color="#64748b", mutation_scale=10))
         if label:
-            if x1 == 11.95: # Vertical arrow from generator
-                ax.text(11.7, 2.25, "AC", fontsize=6, fontweight='bold', color="#475569", ha='right', va='center')
+            if x1 == 11.95 or x1 == 9.25:
+                ax.text(x1 - 0.25, (y1+y2)/2, label, fontsize=6, fontweight='bold', color="#475569", ha='right', va='center')
             else:
                 ax.text((x1+x2)/2, (y1+y2)/2 + 0.12, label, fontsize=6, fontweight='bold', color="#475569", ha='center', va='center')
-            
-    # Connect Blocks
-    draw_arrow(2.3, 2.45, 2.7, 2.45, "CC") # Panels -> Gave
-    draw_arrow(5.0, 2.45, 5.4, 2.45, "CC") # Gave -> MPPT
-    draw_arrow(7.7, 2.45, 8.1, 1.7, "CC") # MPPT -> Lynx
-    draw_arrow(7.7, 0.45, 8.1, 1.2, "48V") # Batteries -> Lynx
-    draw_arrow(10.4, 1.45, 10.8, 1.45, "48V") # Lynx -> Inverter
-    draw_arrow(13.1, 1.45, 13.5, 1.45, "230V") # Inverter -> Loads
-    
-    if has_generator == "Sí":
-        draw_arrow(11.95, 2.7, 11.95, 1.9, "AC") # Generator -> Inverter
+
+    is_riio = "RiiO" in str(system_solution) or "TBB" in str(system_solution)
+
+    if is_riio:
+        draw_block(0.0, 2.0, 2.3, 0.9, "GENERACION SOL", f"{total_panels_configured} Placas LONGi\n({total_pv_power_real/1000:.2f} kWp)", "#0284c7")
+        draw_block(2.7, 2.0, 2.3, 0.9, "PROTECCIONES CC", "Caja Gave Solartec\n(Sobretensiones TII)", "#475569")
         
+        riio_label = str(inverter_name).replace("TBB ", "").split(" (")[0]
+        draw_block(5.4, 1.8, 2.7, 1.3, "TODO EN UNO TBB", f"{riio_label}\n(Inversor + MPPT + WiFi)", "#004b7c")
+        draw_block(9.0, 0.2, 2.3, 0.9, "DISTRIBUCION CC", "Victron Lynx Power In\n(CC Centralizado)", "#334155")
+        draw_block(5.4, 0.2, 2.7, 0.9, "ACUMULACION", f"{batteries_qty} Baterias TBB ES100II\n({batteries_qty*5.04:.1f} kWh)", "#002f54")
+        draw_block(13.2, 2.0, 1.8, 0.9, "VIVIENDA", "Consumos\nCA 230V", "#16a34a")
+        
+        if has_generator == "Sí":
+            draw_block(9.0, 2.8, 2.3, 0.7, "G. ELECTROGENO", "Grupo Auxiliar\n(Entrada AC-In)", "#dc2626")
+
+        draw_arrow(2.3, 2.45, 2.7, 2.45, "CC")
+        draw_arrow(5.0, 2.45, 5.4, 2.45, "CC")
+        draw_arrow(6.75, 0.2, 6.75, 1.8, "48V")
+        draw_arrow(8.1, 2.45, 13.2, 2.45, "230V CA")
+        
+        if has_generator == "Sí":
+            draw_arrow(10.15, 2.8, 8.1, 2.8, "AC-In")
+    else:
+        mppt_short = clean_mppt_label(regulator_ref)
+        inv_short = clean_inverter_label(inverter_name)
+        
+        draw_block(0.0, 2.0, 2.3, 0.9, "GENERACION SOL", f"{total_panels_configured} Placas LONGi\n({total_pv_power_real/1000:.2f} kWp)", "#0284c7")
+        draw_block(2.7, 2.0, 2.3, 0.9, "PROTECCIONES CC", "Caja Gave Solartec\n(Sobretensiones TII)", "#475569")
+        draw_block(5.4, 2.0, 2.3, 0.9, "REGULADOR MPPT", f"{mppt_short}\n(Carga Inteligente)", "#ea580c")
+        draw_block(8.1, 1.0, 2.3, 0.9, "DISTRIBUCION CC", "Victron Lynx Power In\n(CC Centralizado)", "#334155")
+        draw_block(5.4, 0.0, 2.3, 0.9, "ACUMULACION", f"{batteries_qty} Baterias TBB\n({batteries_qty*5.04:.1f} kWh)", "#002f54")
+        draw_block(10.8, 1.0, 2.3, 0.9, "INVERSOR / CARG.", f"Victron {inv_short}\n(48V a 230V CA)", "#1e3a8a")
+        draw_block(13.5, 1.0, 1.5, 0.9, "VIVIENDA", "Consumos\nCA 230V", "#16a34a")
+        
+        if has_generator == "Sí":
+            draw_block(10.8, 2.7, 2.3, 0.7, "G. ELECTROGENO", "Grupo Auxiliar\n(Entrada AC-In)", "#dc2626")
+
+        draw_arrow(2.3, 2.45, 2.7, 2.45, "CC")
+        draw_arrow(5.0, 2.45, 5.4, 2.45, "CC")
+        draw_arrow(7.7, 2.45, 8.1, 1.7, "CC")
+        draw_arrow(7.7, 0.45, 8.1, 1.2, "48V")
+        draw_arrow(10.4, 1.45, 10.8, 1.45, "48V")
+        draw_arrow(13.1, 1.45, 13.5, 1.45, "230V")
+        
+        if has_generator == "Sí":
+            draw_arrow(11.95, 2.7, 11.95, 1.9, "AC")
+
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
 
@@ -462,7 +543,7 @@ class NovelecPDF(FPDF):
         self.set_text_color(100, 116, 139)
         self.cell(0, 10, f"Pagina {self.page_no()} | Propuesta Fotovoltaica Novelec", align="C")
 
-def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max, regulator_ref, regulator_name, inverter_ref, inverter_name):
+def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_configured, total_pv_power_real, batteries_qty, has_generator, selected_panel_name, roof_type, orientation, tilt, hsp, active_appliances, autonomy_days, dod_max, regulator_ref, regulator_name, inverter_ref, inverter_name, system_solution):
     pdf = NovelecPDF()
     pdf.add_page()
     
@@ -564,9 +645,15 @@ def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_c
     pdf.ln(14)
     
     clean_inv_name = inverter_name.split(" (")[0]
-    pdf.cell(90, 11, f"  Inversor / Cargador: {clean_inv_name}", fill=True)
-    pdf.cell(10, 11, "")
-    pdf.cell(90, 11, f"  Regulador Solar: {regulator_name.split(' (')[0]}", fill=True)
+    is_riio = "RiiO" in system_solution or "TBB" in system_solution
+    if is_riio:
+        pdf.cell(90, 11, f"  Inversor / MPPT Todo en Uno: {clean_inv_name}", fill=True)
+        pdf.cell(10, 11, "")
+        pdf.cell(90, 11, f"  Control / WiFi: Pantalla LCD y Kinergy II Wi-Fi", fill=True)
+    else:
+        pdf.cell(90, 11, f"  Inversor / Cargador: {clean_inv_name}", fill=True)
+        pdf.cell(10, 11, "")
+        pdf.cell(90, 11, f"  Regulador Solar: {regulator_name.split(' (')[0]}", fill=True)
     pdf.ln(14)
     
     pdf.cell(90, 11, f"  Autonomia Garantizada: {autonomy_days} Dias (DoD: {dod_max*100:.0f}%)", fill=True)
@@ -581,7 +668,7 @@ def generate_pdf_bytes(project_ref, total_daily_energy, power_va, total_panels_c
     
     temp_dir = tempfile.gettempdir()
     croquis_path = os.path.join(temp_dir, "croquis_instalacion.png")
-    generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, inverter_name, croquis_path)
+    generate_system_sketch(total_panels_configured, total_pv_power_real, batteries_qty, power_va, has_generator, regulator_ref, inverter_name, system_solution, croquis_path)
     
     pdf.image(croquis_path, x=10, y=pdf.get_y(), w=190, h=95)
     pdf.ln(97)
@@ -598,6 +685,8 @@ if "manual_inverter" not in st.session_state:
     st.session_state.manual_inverter = "Automático (Recomendado)"
 if "manual_regulator" not in st.session_state:
     st.session_state.manual_regulator = "Automático (Recomendado)"
+if "manual_riio" not in st.session_state:
+    st.session_state.manual_riio = "Automático (Recomendado)"
 
 # MÓVIL-FIRST: Los parámetros de diseño ya no están escondidos en la barra lateral.
 # Ahora están en un Expander prominente en la página principal, eliminando la necesidad de la barra lateral.
@@ -985,75 +1074,136 @@ with tab1:
         else:
             st.warning(f"⚠️ **Cobertura Solar Parcial ({solar_coverage_pct:.0f}%):** La generación solar estimada en invierno (**{daily_pv_generation_net_kwh:.2f} kWh/día**) es inferior a la demanda diaria (**{daily_consumption_kwh:.2f} kWh/día**). Déficit diario de **{daily_consumption_kwh - daily_pv_generation_net_kwh:.2f} kWh/día**.")
 
-    # ── SELECCIÓN DE ELECTRÓNICA DE POTENCIA EN PÁGINA PRINCIPAL ──
+    # ── SELECCIÓN DE ARQUITECTURA Y ELECTRÓNICA DE POTENCIA EN PÁGINA PRINCIPAL ──
     st.markdown("---")
-    st.markdown("### 🔌 SELECCIÓN DE ELECTRÓNICA DE POTENCIA (INVERSOR Y REGULADOR)")
-    st.markdown("Ajusta o confirma la selección de equipos Victron Energy para la instalación:")
+    st.markdown("### 🔌 SELECCIÓN DE ARQUITECTURA Y ELECTRÓNICA DE POTENCIA")
 
-    col_inv, col_reg = st.columns(2)
-    
-    with col_inv:
-        st.markdown("#### ⚡ Inversor / Cargador Victron Energy")
-        auto_inverter_ref = "PMP482305010"
-        if power_va < 3000:
-            auto_inverter_ref = "PMP482305010"
-        elif power_va < 5000:
-            auto_inverter_ref = "PMP482505012"
-        elif power_va < 8000:
-            auto_inverter_ref = "PMP482805000"
-        elif power_va < 10000:
-            auto_inverter_ref = "PMP483105000"
-        else:
-            auto_inverter_ref = "PMP483150000"
-            
-        manual_inverter_choice = st.selectbox(
-            "Seleccionar Inversor / Cargador",
-            ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in INVERTER_DB.items()],
-            key='manual_inverter'
-        )
-        
-        if manual_inverter_choice == "Automático (Recomendado)":
-            final_inverter_ref = auto_inverter_ref
-            st.caption(f"✨ **Recomendación Automática ({power_va:.0f} VA):** `{INVERTER_DB[auto_inverter_ref]['nombre']}`")
-        else:
-            final_inverter_ref = manual_inverter_choice.split(" - ")[0]
-            st.caption(f"🔧 **Inversor Seleccionado Manualmente:** `{INVERTER_DB[final_inverter_ref]['nombre']}`")
-            
-        inverter_specs = INVERTER_DB[final_inverter_ref]
-        if inverter_specs.get('va', 5000) < power_va:
-            st.warning(f"⚠️ **Inversor Infra-dimensionado:** La potencia continua del inversor (`{inverter_specs['nombre']}`) es de **{inverter_specs.get('va', 5000)} VA**, lo cual es inferior a la demanda simultánea requerida por la vivienda (**{power_va:.0f} VA**).")
+    system_solution = st.radio(
+        "Seleccionar Marca / Solución del Sistema",
+        ["Victron Energy (Sistema Modular Premium)", "TBB Power RiiO Sun II (Solución Todo en Uno All-in-One)"],
+        index=0,
+        key="system_solution",
+        horizontal=True
+    )
 
+    is_riio = "RiiO" in system_solution or "TBB" in system_solution
 
-    with col_reg:
-        st.markdown("#### ☀️ Regulador de Carga Solar Victron SmartSolar")
+    if is_riio:
+        st.markdown("#### ⚡ Inversor / Cargador y MPPT Todo en Uno TBB RiiO Sun II")
         
-        # Test auto recommendation based on optimal grouping for MPPT 250/100
-        S_auto, P_auto, voc_stc_auto, voc_cold_auto, vmp_stc_auto, isc_auto, imp_auto, _ = get_mppt_electrical_grouping(
-            total_panels_configured, panel_specs["voc"], panel_specs["vmp"], panel_specs["isc"], panel_specs["imp"], "SCC125110412"
-        )
-        
-        if voc_cold_auto <= 250.0 and isc_auto <= 70.0 and total_pv_power_real <= 7500:
-            auto_regulator_ref = "SCC125110412"
+        if power_va <= 2000 and total_pv_power_real <= 3480:
+            auto_riio_ref = "Riio Sun II 2KVA-S"
+        elif power_va <= 3000 and total_pv_power_real <= 3480:
+            auto_riio_ref = "Riio Sun II 3KVA-S"
+        elif power_va <= 5000 and total_pv_power_real <= 5800:
+            auto_riio_ref = "Riio Sun II 5KVA-S"
+        elif power_va <= 6000 and total_pv_power_real <= 5800:
+            auto_riio_ref = "Riio Sun II 6KVA-S"
         else:
-            auto_regulator_ref = "SCC145110512"
-            
-        manual_regulator_choice_val = st.selectbox(
-            "Seleccionar Regulador de Carga",
-            ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in REGULATOR_DB.items()],
-            key='manual_regulator'
+            auto_riio_ref = "Riio Sun II 8KVA-S"
+
+        manual_riio_choice = st.selectbox(
+            "Seleccionar Inversor Todo en Uno TBB RiiO Sun II",
+            ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in TBB_RIIO_DB.items()],
+            key='manual_riio'
         )
-        
-        if manual_regulator_choice_val == "Automático (Recomendado)":
-            final_regulator_ref = auto_regulator_ref
-            st.caption(f"✨ **Recomendación Automática ({total_pv_power_real/1000:.2f} kWp):** `{REGULATOR_DB[auto_regulator_ref]['nombre'].split(' (')[0]}`")
+
+        if manual_riio_choice == "Automático (Recomendado)":
+            final_riio_ref = auto_riio_ref
+            st.caption(f"✨ **Recomendación Automática ({power_va:.0f} VA, {total_pv_power_real/1000:.2f} kWp):** `{TBB_RIIO_DB[auto_riio_ref]['nombre']}`")
         else:
-            final_regulator_ref = manual_regulator_choice_val.split(" - ")[0]
-            st.caption(f"🔧 **Regulador Seleccionado Manualmente:** `{REGULATOR_DB[final_regulator_ref]['nombre'].split(' (')[0]}`")
-            
-        reg_specs = REGULATOR_DB[final_regulator_ref]
-        regulator_ref = final_regulator_ref
+            final_riio_ref = manual_riio_choice.split(" - ")[0]
+            st.caption(f"🔧 **RiiO Sun II Seleccionado Manualmente:** `{TBB_RIIO_DB[final_riio_ref]['nombre']}`")
+
+        riio_specs = TBB_RIIO_DB[final_riio_ref]
+        inverter_specs = {
+            "nombre": riio_specs["nombre"],
+            "pvp": riio_specs["pvp"],
+            "va": riio_specs["va"],
+            "current": riio_specs["current"],
+            "charger_current": riio_specs["charger_current"]
+        }
+        reg_specs = {
+            "nombre": f"MPPT 250/{riio_specs['max_current']} (Integrado en {riio_specs['ref']})",
+            "pvp": 0.0,
+            "max_current": riio_specs["max_current"],
+            "max_voc": riio_specs["max_voc"],
+            "max_power": riio_specs["max_power"],
+            "max_isc": riio_specs["max_isc"],
+            "min_voc": riio_specs["min_voc"],
+            "supports_48v": True
+        }
+        regulator_ref = riio_specs["ref"]
         regulator_name = reg_specs["nombre"]
-        regulator_pvp = reg_specs["pvp"]
+        regulator_pvp = 0.0
+        final_inverter_ref = final_riio_ref
+
+        if riio_specs['va'] < power_va:
+            st.warning(f"⚠️ **Inversor Infra-dimensionado:** La potencia continua del TBB RiiO Sun II (`{riio_specs['nombre']}`) es de **{riio_specs['va']} VA**, lo cual es inferior a la demanda simultánea requerida por la vivienda (**{power_va:.0f} VA**).")
+
+    else:
+        col_inv, col_reg = st.columns(2)
+        
+        with col_inv:
+            st.markdown("#### ⚡ Inversor / Cargador Victron Energy")
+            auto_inverter_ref = "PMP482305010"
+            if power_va < 3000:
+                auto_inverter_ref = "PMP482305010"
+            elif power_va < 5000:
+                auto_inverter_ref = "PMP482505012"
+            elif power_va < 8000:
+                auto_inverter_ref = "PMP482805000"
+            elif power_va < 10000:
+                auto_inverter_ref = "PMP483105000"
+            else:
+                auto_inverter_ref = "PMP483150000"
+                
+            manual_inverter_choice = st.selectbox(
+                "Seleccionar Inversor / Cargador",
+                ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in INVERTER_DB.items()],
+                key='manual_inverter'
+            )
+            
+            if manual_inverter_choice == "Automático (Recomendado)":
+                final_inverter_ref = auto_inverter_ref
+                st.caption(f"✨ **Recomendación Automática ({power_va:.0f} VA):** `{INVERTER_DB[auto_inverter_ref]['nombre']}`")
+            else:
+                final_inverter_ref = manual_inverter_choice.split(" - ")[0]
+                st.caption(f"🔧 **Inversor Seleccionado Manualmente:** `{INVERTER_DB[final_inverter_ref]['nombre']}`")
+                
+            inverter_specs = INVERTER_DB[final_inverter_ref]
+            if inverter_specs.get('va', 5000) < power_va:
+                st.warning(f"⚠️ **Inversor Infra-dimensionado:** La potencia continua del inversor (`{inverter_specs['nombre']}`) es de **{inverter_specs.get('va', 5000)} VA**, lo cual es inferior a la demanda simultánea requerida por la vivienda (**{power_va:.0f} VA**).")
+
+        with col_reg:
+            st.markdown("#### ☀️ Regulador de Carga Solar Victron SmartSolar")
+            
+            S_auto, P_auto, voc_stc_auto, voc_cold_auto, vmp_stc_auto, isc_auto, imp_auto, _ = get_mppt_electrical_grouping(
+                total_panels_configured, panel_specs["voc"], panel_specs["vmp"], panel_specs["isc"], panel_specs["imp"], "SCC125110412"
+            )
+            
+            if voc_cold_auto <= 250.0 and isc_auto <= 70.0 and total_pv_power_real <= 7500:
+                auto_regulator_ref = "SCC125110412"
+            else:
+                auto_regulator_ref = "SCC145110512"
+                
+            manual_regulator_choice_val = st.selectbox(
+                "Seleccionar Regulador de Carga",
+                ["Automático (Recomendado)"] + [f"{k} - {v['nombre']}" for k, v in REGULATOR_DB.items()],
+                key='manual_regulator'
+            )
+            
+            if manual_regulator_choice_val == "Automático (Recomendado)":
+                final_regulator_ref = auto_regulator_ref
+                st.caption(f"✨ **Recomendación Automática ({total_pv_power_real/1000:.2f} kWp):** `{REGULATOR_DB[auto_regulator_ref]['nombre'].split(' (')[0]}`")
+            else:
+                final_regulator_ref = manual_regulator_choice_val.split(" - ")[0]
+                st.caption(f"🔧 **Regulador Seleccionado Manualmente:** `{REGULATOR_DB[final_regulator_ref]['nombre'].split(' (')[0]}`")
+                
+            reg_specs = REGULATOR_DB[final_regulator_ref]
+            regulator_ref = final_regulator_ref
+            regulator_name = reg_specs["nombre"]
+            regulator_pvp = reg_specs["pvp"]
 
     # Calculate optimal electrical grouping FOR THE FINAL SELECTED REGULATOR
     S_series, P_parallel, string_voc_stc_ui, string_voc_cold_ui, string_vmp_stc_ui, total_isc_ui, total_imp_ui, grouping_candidates = get_mppt_electrical_grouping(
@@ -1298,26 +1448,38 @@ with tab1:
         })
 
     # Electrónica de potencia
-    bom_items.append({
-        "Categoría": "Inversor / Cargador",
-        "Referencia": final_inverter_ref,
-        "Descripción": inverter_specs["nombre"],
-        "Cantidad": 1,
-        "Unidad": "uds",
-        "PVP Tarifa (€)": inverter_specs["pvp"],
-        "Descuento": 0.0,
-        "Is_Victron": True
-    })
-    bom_items.append({
-        "Categoría": "Regulador de Carga",
-        "Referencia": regulator_ref,
-        "Descripción": regulator_name,
-        "Cantidad": 1,
-        "Unidad": "uds",
-        "PVP Tarifa (€)": regulator_pvp,
-        "Descuento": 0.0,
-        "Is_Victron": True
-    })
+    if is_riio:
+        bom_items.append({
+            "Categoría": "Inversor Todo en Uno (All-in-One)",
+            "Referencia": final_riio_ref,
+            "Descripción": f"{riio_specs['nombre']} (Incluye Pantalla LCD, MPPT 250V e Interfaz Wifi Kinergy II)",
+            "Cantidad": 1,
+            "Unidad": "uds",
+            "PVP Tarifa (€)": riio_specs["pvp"],
+            "Descuento": 0.0,
+            "Is_Victron": False
+        })
+    else:
+        bom_items.append({
+            "Categoría": "Inversor / Cargador",
+            "Referencia": final_inverter_ref,
+            "Descripción": inverter_specs["nombre"],
+            "Cantidad": 1,
+            "Unidad": "uds",
+            "PVP Tarifa (€)": inverter_specs["pvp"],
+            "Descuento": 0.0,
+            "Is_Victron": True
+        })
+        bom_items.append({
+            "Categoría": "Regulador de Carga",
+            "Referencia": regulator_ref,
+            "Descripción": regulator_name,
+            "Cantidad": 1,
+            "Unidad": "uds",
+            "PVP Tarifa (€)": regulator_pvp,
+            "Descuento": 0.0,
+            "Is_Victron": True
+        })
     
     # Baterías y brackets
     bom_items.append({
@@ -1342,36 +1504,37 @@ with tab1:
     })
 
     # GX Monitorización
-    bom_items.append({
-        "Categoría": "Monitorización y GX",
-        "Referencia": "BPP900450110",
-        "Descripción": "Victron Cerbo GX MK2 (Centro de control y comunicaciones)",
-        "Cantidad": 1,
-        "Unidad": "uds",
-        "PVP Tarifa (€)": 265.0,
-        "Descuento": 0.0,
-        "Is_Victron": True
-    })
-    bom_items.append({
-        "Categoría": "Monitorización y GX",
-        "Referencia": "BPP900455050",
-        "Descripción": "Victron GX Touch 50 (Pantalla táctil a color de 5 pulgadas)",
-        "Cantidad": 1,
-        "Unidad": "uds",
-        "PVP Tarifa (€)": 235.0,
-        "Descuento": 0.0,
-        "Is_Victron": True
-    })
-    bom_items.append({
-        "Categoría": "Monitorización y GX",
-        "Referencia": "BPP900465050",
-        "Descripción": "Soporte de pared para pantalla GX Touch 50 Wall Mount",
-        "Cantidad": 1,
-        "Unidad": "uds",
-        "PVP Tarifa (€)": 16.0,
-        "Descuento": 0.0,
-        "Is_Victron": True
-    })
+    if not is_riio:
+        bom_items.append({
+            "Categoría": "Monitorización y GX",
+            "Referencia": "BPP900450110",
+            "Descripción": "Victron Cerbo GX MK2 (Centro de control y comunicaciones)",
+            "Cantidad": 1,
+            "Unidad": "uds",
+            "PVP Tarifa (€)": 265.0,
+            "Descuento": 0.0,
+            "Is_Victron": True
+        })
+        bom_items.append({
+            "Categoría": "Monitorización y GX",
+            "Referencia": "BPP900455050",
+            "Descripción": "Victron GX Touch 50 (Pantalla táctil a color de 5 pulgadas)",
+            "Cantidad": 1,
+            "Unidad": "uds",
+            "PVP Tarifa (€)": 235.0,
+            "Descuento": 0.0,
+            "Is_Victron": True
+        })
+        bom_items.append({
+            "Categoría": "Monitorización y GX",
+            "Referencia": "BPP900465050",
+            "Descripción": "Soporte de pared para pantalla GX Touch 50 Wall Mount",
+            "Cantidad": 1,
+            "Unidad": "uds",
+            "PVP Tarifa (€)": 16.0,
+            "Descuento": 0.0,
+            "Is_Victron": True
+        })
 
     # Distribución y protecciones
     bom_items.append({
@@ -1406,40 +1569,40 @@ with tab1:
     })
 
     # Cables de datos
-    bom_items.append({
-        "Categoría": "Cable de Datos",
-        "Referencia": "ASS030064951",
-        "Descripción": "Cable RJ45 UTP 1.8 m (VE.Bus - Inversor a Cerbo)",
-        "Cantidad": 1,
-        "Unidad": "uds",
-        "PVP Tarifa (€)": 11.0,
-        "Descuento": 0.0,
-        "Is_Victron": True
-    })
-    
-    # Lógica inteligente para cable de datos del MPPT
-    if regulator_ref == "SCC125110412":
-        bom_items.append({
-            "Categoría": "Cable de Datos",
-            "Referencia": "ASS030530218",
-            "Descripción": "Cable VE.Direct 1.8 m (MPPT a Cerbo)",
-            "Cantidad": 1,
-            "Unidad": "uds",
-            "PVP Tarifa (€)": 15.0,
-            "Descuento": 0.0,
-            "Is_Victron": True
-        })
-    else: # Si es MPPT RS se conecta por VE.Can, por tanto usa RJ45
+    if not is_riio:
         bom_items.append({
             "Categoría": "Cable de Datos",
             "Referencia": "ASS030064951",
-            "Descripción": "Cable RJ45 UTP 1.8 m (VE.Can - MPPT RS a Cerbo)",
+            "Descripción": "Cable RJ45 UTP 1.8 m (VE.Bus - Inversor a Cerbo)",
             "Cantidad": 1,
             "Unidad": "uds",
             "PVP Tarifa (€)": 11.0,
             "Descuento": 0.0,
             "Is_Victron": True
         })
+        
+        if regulator_ref == "SCC125110412":
+            bom_items.append({
+                "Categoría": "Cable de Datos",
+                "Referencia": "ASS030530218",
+                "Descripción": "Cable VE.Direct 1.8 m (MPPT a Cerbo)",
+                "Cantidad": 1,
+                "Unidad": "uds",
+                "PVP Tarifa (€)": 15.0,
+                "Descuento": 0.0,
+                "Is_Victron": True
+            })
+        else:
+            bom_items.append({
+                "Categoría": "Cable de Datos",
+                "Referencia": "ASS030064951",
+                "Descripción": "Cable RJ45 UTP 1.8 m (VE.Can - MPPT RS a Cerbo)",
+                "Cantidad": 1,
+                "Unidad": "uds",
+                "PVP Tarifa (€)": 11.0,
+                "Descuento": 0.0,
+                "Is_Victron": True
+            })
         
     bom_items.append({
         "Categoría": "Cable de Datos",
